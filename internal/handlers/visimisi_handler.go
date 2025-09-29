@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bem_be/internal/models"
 	"bem_be/internal/services"
 	"math"
 	"net/http"
@@ -11,20 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// VisiMisiHandler menangani request HTTP terkait berita
-type VisiMisiHandler struct {
+// visimisiHandler menangani request HTTP terkait berita
+type visimisiHandler struct {
 	service *services.VisiMisiService
 }
 
-// NewVisiMisiHandler membuat handler berita baru
-func NewVisiMisiHandler(db *gorm.DB) *VisiMisiHandler {
-	return &VisiMisiHandler{
+// NewvisimisiHandler membuat handler berita baru
+func NewVisiMisiHandler(db *gorm.DB) *visimisiHandler {
+	return &visimisiHandler{
 		service: services.NewVisiMisiService(db),
 	}
 }
 
 // GetAllVisiMisi mengembalikan semua berita dengan pagination
-func (h *VisiMisiHandler) GetAllVisiMisi(c *gin.Context) {
+func (h *visimisiHandler) GetAllVisiMisi(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
 
@@ -62,78 +61,106 @@ func (h *VisiMisiHandler) GetAllVisiMisi(c *gin.Context) {
 }
 
 // GetVisiMisiByID mengembalikan berita berdasarkan ID
-func (h *VisiMisiHandler) GetVisiMisiByID(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
-		return
-	}
+// func (h *visimisiHandler) GetVisiMisiByID(c *gin.Context) {
+// 	idStr := c.Param("id")
+// 	id, err := strconv.ParseUint(idStr, 10, 64)
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
+// 		return
+// 	}
 
-	visimisi, err := h.service.GetVisiMisiByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": err.Error()})
-		return
-	}
+// 	visimisi, err := h.service.GetVisiMisiByID(uint(id))
+// 	if err != nil {
+// 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": err.Error()})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Berita berhasil didapatkan",
-		"data":    visimisi,
-	})
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"status":  "success",
+// 		"message": "Berita berhasil didapatkan",
+// 		"data":    visimisi,
+// 	})
+// }
+
+func (h *visimisiHandler) GetVisiMisiById(c *gin.Context) {
+	userId := c.Param("id")
+
+    id, err := strconv.ParseUint(userId, 10, 64)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
+        return
+    }
+
+    visiMisi, err := h.service.GetVisiMisiById(uint(id))
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":  "error",
+            "message": "Visi misi untuk periode ini tidak ditemukan",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  "success",
+        "message": "Data visi misi ditemukan",
+        "data":    visiMisi,
+    })
 }
 
-// CreateVisiMisi membuat berita baru (dengan unggahan file opsional)
-func (h *VisiMisiHandler) CreateVisiMisi(c *gin.Context) {
-	var visimisi models.Period
+func (h *visimisiHandler) GetVisiMisiByPeriod(c *gin.Context) {
+	period := c.Param("period")
 
-	visimisi.Vision = c.PostForm("visi")
-	visimisi.Mission = c.PostForm("misi")
+    visiMisi, err := h.service.GetVisiMisiByPeriod(period)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":  "error",
+            "message": "Visi misi untuk periode ini tidak ditemukan",
+        })
+        return
+    }
 
-	if err := h.service.CreateVisiMisi(&visimisi); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "Berita berhasil dibuat",
-		"data":    visimisi,
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "status":  "success",
+        "message": "Data visi misi ditemukan",
+        "data":    visiMisi,
+    })
 }
 
 // UpdateVisiMisi memperbarui berita yang ada.
-func (h *VisiMisiHandler) UpdateVisiMisi(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
-		return
-	}
+func (h *visimisiHandler) UpdateVisiMisi(c *gin.Context) {
+    userId := c.Param("id")
 
-	existingVisiMisi, err := h.service.GetVisiMisiByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": err.Error()})
-		return
-	}
+    id, err := strconv.ParseUint(userId, 10, 64)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
+        return
+    }
 
-	existingVisiMisi.Vision = c.PostForm("title")
-	existingVisiMisi.Mission = c.PostForm("content")
+    var req struct {
+        Visi string `json:"visi"`
+        Misi string `json:"misi"`
+    }
 
-	if err := h.service.UpdateVisiMisi(existingVisiMisi); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
-		return
-	}
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format JSON tidak valid"})
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Berita berhasil diperbarui",
-		"data":    existingVisiMisi,
-	})
+    updatedVisiMisi, err := h.service.UpdateVisiMisiByID(uint(id), req.Visi, req.Misi)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  "success",
+        "message": "Visi misi berhasil diperbarui",
+        "data":    updatedVisiMisi,
+    })
 }
 
 // DeleteVisiMisi menghapus sebuah berita
-func (h *VisiMisiHandler) DeleteVisiMisi(c *gin.Context) {
+func (h *visimisiHandler) DeleteVisiMisi(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -153,7 +180,7 @@ func (h *VisiMisiHandler) DeleteVisiMisi(c *gin.Context) {
 }
 
 // RestoreVisiMisi menangani permintaan untuk memulihkan berita yang telah di-soft-delete.
-func (h *VisiMisiHandler) RestoreVisiMisi(c *gin.Context) {
+func (h *visimisiHandler) RestoreVisiMisi(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {

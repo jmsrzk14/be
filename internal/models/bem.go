@@ -9,6 +9,8 @@ import (
 // BEM represents the main student executive board for a specific period.
 type BEM struct {
 	ID           uint           `json:"id" gorm:"primaryKey"`
+	Vision       string         `gorm:"not null" json:"vision"`
+	Mission      string         `gorm:"not null" json:"mission"`
 	LeaderID     uint           `json:"leader_id"`
 	Leader       *Student       `json:"leader" gorm:"foreignKey:ID;references:LeaderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	CoLeaderID   uint           `json:"coleader_id"`

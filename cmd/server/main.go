@@ -78,12 +78,14 @@ func main() {
 	galeryHandler := handlers.NewGaleryHandler(database.DB)
 	departmentHandler := handlers.NewDepartmentHandler(database.DB)
 	organizationHandler := handlers.NewOrganizationHandler(database.DB)
-	requestHandler := handlers.NewRequestHandler(database.DB)
+	visimisiHandler := handlers.NewVisiMisiHandler(database.DB)
+
 	// Guest Page
 	router.GET("/api/association", associationHandler.GetAllAssociationsGuest)
 	router.GET("/api/club", clubHandler.GetAllClubsGuest)
 	router.GET("/api/department", departmentHandler.GetAllDepartmentsGuest)
 	router.GET("/api/bems/manage/:period", bemHandler.GetBEMByPeriod)
+	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 
 	// Protected routes
 	authRequired := router.Group("/api")
@@ -165,6 +167,9 @@ func main() {
 		studentRoutes := authRequired.Group("/student")
 		studentRoutes.Use(middleware.RoleMiddleware("Mahasiswa"))
 		{
+			studentRoutes.GET("/visimisibem/:id", visimisiHandler.GetVisiMisiById)
+			studentRoutes.PUT("/visimisibem/:id", visimisiHandler.UpdateVisiMisi)
+
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)
 

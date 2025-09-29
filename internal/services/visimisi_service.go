@@ -11,38 +11,70 @@ import (
 // VisiMisiService adalah service untuk operasi berita.
 type VisiMisiService struct {
 	repository *repositories.VisiMisiRepository
+	db         *gorm.DB
 }
 
 // NewVisiMisiService membuat service berita baru.
 func NewVisiMisiService(db *gorm.DB) *VisiMisiService {
 	return &VisiMisiService{
 		repository: repositories.NewVisiMisiRepository(),
+		db:         db,
 	}
 }
 
-// CreateVisiMisi membuat berita baru.
-func (s *VisiMisiService) CreateVisiMisi(visimisi *models.Period) error {
-	if visimisi.Vision == "" || visimisi.Mission == "" {
-		return errors.New("judul dan konten tidak boleh kosong")
-	}
-	return s.repository.Create(visimisi)
+func (s *VisiMisiService) GetVisiMisiByPeriod(period string) (*models.BEM, error) {
+    var visiMisi models.BEM
+
+    err := s.db.Where(
+		"period = ?",
+		period,
+	).First(&visiMisi).Error
+    if err != nil {
+        return nil, err
+    }
+
+    return &visiMisi, nil
 }
 
-// UpdateVisiMisi memperbarui berita yang ada.
-func (s *VisiMisiService) UpdateVisiMisi(visimisi *models.Period) error {
-	return s.repository.Update(visimisi)
+
+func (s *VisiMisiService) GetVisiMisiById(id uint) (*models.BEM, error) {
+    var visiMisi models.BEM
+
+    err := s.db.Where(
+		"leader_id = ? OR co_leader_id = ? OR secretary1_id = ? OR secretary2_id = ? OR treasurer1_id = ? OR treasurer2_id = ?",
+		id, id, id, id, id, id,
+	).First(&visiMisi).Error
+    if err != nil {
+        return nil, err
+    }
+
+    return &visiMisi, nil
 }
 
 // GetVisiMisiByID mendapatkan berita berdasarkan ID.
-func (s *VisiMisiService) GetVisiMisiByID(id uint) (*models.Period, error) {
-	visimisi, err := s.repository.FindByID(id)
+func (s *VisiMisiService) UpdateVisiMisiByID(id uint, visi string, misi string) (*models.BEM, error) {
+	var visiMisi models.BEM
+
+	// Cari record dulu
+	err := s.db.Where(
+		"leader_id = ? OR co_leader_id = ? OR secretary1_id = ? OR secretary2_id = ? OR treasurer1_id = ? OR treasurer2_id = ?",
+		id, id, id, id, id, id,
+	).First(&visiMisi).Error
+
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("berita tidak ditemukan")
-		}
 		return nil, err
 	}
-	return visimisi, nil
+
+	// Update field
+	visiMisi.Vision = visi
+	visiMisi.Mission = misi
+
+	// Simpan perubahan
+	if err := s.db.Save(&visiMisi).Error; err != nil {
+		return nil, err
+	}
+
+	return &visiMisi, nil
 }
 
 // GetAllVisiMisi mendapatkan semua berita dengan pagination.
