@@ -127,7 +127,7 @@ func (h *visimisiHandler) GetVisiMisiByPeriod(c *gin.Context) {
 }
 
 // UpdateVisiMisi memperbarui berita yang ada.
-func (h *visimisiHandler) UpdateVisiMisi(c *gin.Context) {
+func (h *visimisiHandler) UpdateVisiMisiBem(c *gin.Context) {
     userId := c.Param("id")
 
     id, err := strconv.ParseUint(userId, 10, 64)
@@ -147,6 +147,38 @@ func (h *visimisiHandler) UpdateVisiMisi(c *gin.Context) {
     }
 
     updatedVisiMisi, err := h.service.UpdateVisiMisiByID(uint(id), req.Visi, req.Misi)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  "success",
+        "message": "Visi misi berhasil diperbarui",
+        "data":    updatedVisiMisi,
+    })
+}
+
+func (h *visimisiHandler) UpdateVisiMisiPeriod(c *gin.Context) {
+    userId := c.Param("id")
+
+    id, err := strconv.ParseUint(userId, 10, 64)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
+        return
+    }
+
+    var req struct {
+        Visi string `json:"visi"`
+        Misi string `json:"misi"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format JSON tidak valid"})
+        return
+    }
+
+    updatedVisiMisi, err := h.service.UpdateVisiMisiByPeriod(uint(id), req.Visi, req.Misi)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
         return

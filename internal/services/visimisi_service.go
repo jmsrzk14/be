@@ -77,6 +77,32 @@ func (s *VisiMisiService) UpdateVisiMisiByID(id uint, visi string, misi string) 
 	return &visiMisi, nil
 }
 
+// GetVisiMisiByID mendapatkan berita berdasarkan ID.
+func (s *VisiMisiService) UpdateVisiMisiByPeriod(id uint, visi string, misi string) (*models.Period, error) {
+	var visiMisi models.Period
+
+	// Cari record dulu
+	err := s.db.Where(
+		"leader_id = ? OR co_leader_id = ? OR secretary1_id = ? OR secretary2_id = ? OR treasurer1_id = ? OR treasurer2_id = ?",
+		id, id, id, id, id, id,
+	).First(&visiMisi).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Update field
+	visiMisi.Vision = visi
+	visiMisi.Mission = misi
+
+	// Simpan perubahan
+	if err := s.db.Save(&visiMisi).Error; err != nil {
+		return nil, err
+	}
+
+	return &visiMisi, nil
+}
+
 // GetAllVisiMisi mendapatkan semua berita dengan pagination.
 func (s *VisiMisiService) GetAllVisiMisi(limit, offset int) ([]models.Period, int64, error) {
 	return s.repository.GetAllVisiMisi(limit, offset)
