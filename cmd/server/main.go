@@ -171,6 +171,7 @@ func main() {
 			studentRoutes.GET("/visimisibem/:id", visimisiHandler.GetVisiMisiById)
 			studentRoutes.PUT("/visimisibem/:id", visimisiHandler.UpdateVisiMisiBem)
 			studentRoutes.PUT("/visimisiperiod/:id", visimisiHandler.UpdateVisiMisiPeriod)
+			studentRoutes.POST("/announcements", announcementHandler.CreateAnnouncement)
 
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)
@@ -192,7 +193,7 @@ func main() {
 	}
 
 	// Start the server
-	port := utils.GetEnvWithDefault("SERVER_PORT", "8080")
+	port := utils.GetEnvWithDefault("SERVER_PORT", "9090")
 
 	// Add public endpoints
 	router.GET("/api/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)
