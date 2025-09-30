@@ -71,13 +71,19 @@ func CampusLogin(c *gin.Context) {
 	fmt.Println("External user username:", loginResponse.User.Username)
 
 	// Use custom response struct to ensure the correct field order
-	orderedResponse := models.OrderedLoginResponse{
-		User:           loginResponse.User,
-		Token:          loginResponse.Token,
-		RefreshToken:   loginResponse.RefreshToken,
-		Position:       student.Position,
-		OrganizationID: student.OrganizationID,
-	}
+	var orgID int
+if student.OrganizationID != nil {
+    orgID = *student.OrganizationID
+}
+
+orderedResponse := models.OrderedLoginResponse{
+    User:           loginResponse.User,
+    Token:          loginResponse.Token,
+    RefreshToken:   loginResponse.RefreshToken,
+    Position:       student.Position,
+    OrganizationID: orgID, // 0 kalau nil
+}
+
 
 	// Set content type
 	c.Header("Content-Type", "application/json")

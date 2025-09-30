@@ -18,16 +18,19 @@ import (
 )
 
 // AnnouncementHandler handles HTTP requests related to announcements
+// di AnnouncementHandler
 type AnnouncementHandler struct {
-	service *services.AnnouncementService
+    service *services.AnnouncementService
+    db      *gorm.DB
 }
 
-// NewAnnouncementHandler creates a new announcement handler
 func NewAnnouncementHandler(db *gorm.DB) *AnnouncementHandler {
-	return &AnnouncementHandler{
-		service: services.NewAnnouncementService(db),
-	}
+    return &AnnouncementHandler{
+        service: services.NewAnnouncementService(db),
+        db:      db,
+    }
 }
+
 
 // GetAllAnnouncements returns all announcements
 func (h *AnnouncementHandler) GetAllAnnouncements(c *gin.Context) {
@@ -96,51 +99,61 @@ func (h *AnnouncementHandler) GetAnnouncementByID(c *gin.Context) {
 
 // CreateAnnouncement creates a new announcement (with optional file)
 func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
-	var announcement models.Announcement
+    var announcement models.Announcement
 
-	announcement.Title = c.PostForm("title")
-	announcement.Content = c.PostForm("content")
-	userID, exists := c.Get("userID")
+    // Ambil external user id dari JWT context
+    extUserID, exists := c.Get("userID")
     if !exists {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
         return
     }
-    announcement.AuthorID = userID.(uint)
 
-	// Handle file upload
-	file, err := c.FormFile("file")
-	if err == nil {
-		// Buat folder jika belum ada
-		uploadPath := "uploads/announcements"
-		if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create upload folder"})
-			return
-		}
+    // Cari student berdasarkan external user id
+    var student models.Student
+    if err := h.db.Where("user_id = ?", extUserID).First(&student).Error; err != nil {
+        c.JSON(http.StatusForbidden, gin.H{"error": "Student not found"})
+        return
+    }
 
-		// Generate unique filename
-		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
-		filePath := filepath.Join(uploadPath, fileName)
+    // Isi field announcement
+    announcement.Title = c.PostForm("title")
+    announcement.Content = c.PostForm("content")
+    announcement.AuthorID = uint(student.UserID)   // pakai user_id dari students
+    announcement.Position = student.Position       // 🔥 ambil position dari tabel students
 
-		// Simpan file
-		if err := c.SaveUploadedFile(file, filePath); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-			return
-		}
+    if student.OrganizationID != nil {
+        orgID := uint(*student.OrganizationID)
+        announcement.OrganizationID = &orgID
+    }
 
-		announcement.FileURL = filePath
-	}
+    // Handle file upload
+    file, err := c.FormFile("file")
+    if err == nil {
+        uploadPath := "uploads/announcements"
+        os.MkdirAll(uploadPath, os.ModePerm)
+        fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+        filePath := filepath.Join(uploadPath, fileName)
 
-	if err := h.service.Createannouncement(&announcement); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+        if err := c.SaveUploadedFile(file, filePath); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+            return
+        }
+        announcement.FileURL = filePath
+    }
 
-	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "Announcement created successfully",
-		"data":    announcement,
-	})
+    // Simpan ke DB
+    if err := h.service.Createannouncement(&announcement); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "status":  "success",
+        "message": "Announcement created successfully",
+        "data":    announcement,
+    })
 }
+
 
 // UpdateAnnouncement updates an existing announcement (with optional file update)
 func (h *AnnouncementHandler) UpdateAnnouncement(c *gin.Context) {

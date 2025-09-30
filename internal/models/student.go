@@ -10,9 +10,9 @@ import (
 type Student struct {
 	ID             uint           `json:"id" gorm:"primaryKey"`
 	DimID          int            `json:"dim_id" gorm:"not null"`
-	UserID         int            `json:"user_id" gorm:"not null;comment:External user ID from campus system"`
+	UserID int `json:"user_id" gorm:"uniqueIndex:idx_students_user_id;not null"`
 	User           *User          `json:"-" gorm:"foreignKey:ExternalUserID;references:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	OrganizationID int            `form:"organization_id" json:"organization_id" gorm:"not null"`
+	OrganizationID *int           `form:"organization_id" json:"organization_id"` // nullable
 	Organization   *Organization  `json:"organization" gorm:"foreignKey:ID;references:OrganizationID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	UserName       string         `json:"user_name" gorm:"type:varchar(20)"`
 	NIM            string         `json:"nim" gorm:"type:varchar(20);uniqueIndex;not null"`

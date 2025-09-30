@@ -151,19 +151,30 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 	}
 	log.Printf("Student OrganizationID: %d, OrganizationName: %s", student.OrganizationID, student.Organization.Name)
 
-	if student.Organization == nil || student.OrganizationID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Student is not assigned to any organization"})
-		return
-	}
-	request.OrganizationID = student.OrganizationID
-	request.OrganizationName = student.Organization.Name
-	request.Status = "Pending"
-	request.CreatedAt = time.Now()
-	request.UpdatedAt = time.Now()
-	if err := h.service.CreateRequest(&request); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	if student.OrganizationID == nil || *student.OrganizationID == 0 {
+    c.JSON(http.StatusBadRequest, gin.H{"error": "Student is not assigned to any organization"})
+    return
+}
+
+	var orgID int
+if student.OrganizationID != nil {
+    orgID = *student.OrganizationID
+}
+request.OrganizationID = orgID
+
+if student.Organization != nil {
+    request.OrganizationName = student.Organization.Name
+}
+
+request.Status = "Pending"
+request.CreatedAt = time.Now()
+request.UpdatedAt = time.Now()
+
+if err := h.service.CreateRequest(&request); err != nil {
+    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+    return
+}
+
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Request created successfully",

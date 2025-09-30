@@ -293,7 +293,7 @@ func (s *StudentService) AssignToPeriod(studentID uint, orgID int, role string, 
 		return nil, err
 	}
 	newStudent.Position = role
-	newStudent.OrganizationID = orgID
+	newStudent.OrganizationID = &orgID
 	if err := s.db.Save(&newStudent).Error; err != nil {
 		return nil, err
 	}
