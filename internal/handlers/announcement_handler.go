@@ -1,16 +1,17 @@
 package handlers
 
+import "strings"
 import (
-	"net/http"
-	"strconv"
-	"math"
 	"fmt"
-	"path/filepath"
+	"math"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strconv"
 	"time"
 
-	"gorm.io/gorm"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"bem_be/internal/models"
 	"bem_be/internal/services"
@@ -20,17 +21,16 @@ import (
 // AnnouncementHandler handles HTTP requests related to announcements
 // di AnnouncementHandler
 type AnnouncementHandler struct {
-    service *services.AnnouncementService
-    db      *gorm.DB
+	service *services.AnnouncementService
+	db      *gorm.DB
 }
 
 func NewAnnouncementHandler(db *gorm.DB) *AnnouncementHandler {
-    return &AnnouncementHandler{
-        service: services.NewAnnouncementService(db),
-        db:      db,
-    }
+	return &AnnouncementHandler{
+		service: services.NewAnnouncementService(db),
+		db:      db,
+	}
 }
-
 
 // GetAllAnnouncements returns all announcements
 func (h *AnnouncementHandler) GetAllAnnouncements(c *gin.Context) {
@@ -52,6 +52,10 @@ func (h *AnnouncementHandler) GetAllAnnouncements(c *gin.Context) {
 		return
 	}
 
+	// 🔥 Format posisi biar rapi
+	for i := range announcements {
+		announcements[i].Position = formatPosition(announcements[i].Position)
+	}
 	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 
 	metadata := utils.PaginationMetadata{
@@ -96,64 +100,89 @@ func (h *AnnouncementHandler) GetAnnouncementByID(c *gin.Context) {
 		"data":    result,
 	})
 }
+func formatPosition(pos string) string {
+	// Ganti underscore dengan spasi, lalu capital setiap kata
+	pos = strings.ReplaceAll(pos, "_", " ")
+	return strings.Title(pos) // "ketua_bem" -> "Ketua Bem"
+}
 
 // CreateAnnouncement creates a new announcement (with optional file)
 func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
-    var announcement models.Announcement
+	var announcement models.Announcement
 
-    // Ambil external user id dari JWT context
-    extUserID, exists := c.Get("userID")
-    if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-        return
-    }
+	// Ambil external user id dari JWT context
+	extUserID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 
-    // Cari student berdasarkan external user id
-    var student models.Student
-    if err := h.db.Where("user_id = ?", extUserID).First(&student).Error; err != nil {
-        c.JSON(http.StatusForbidden, gin.H{"error": "Student not found"})
-        return
-    }
+	// Cari student berdasarkan external user id
+	var student models.Student
+	if err := h.db.Where("user_id = ?", extUserID).First(&student).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Student not found"})
+		return
+	}
 
-    // Isi field announcement
-    announcement.Title = c.PostForm("title")
-    announcement.Content = c.PostForm("content")
-    announcement.AuthorID = uint(student.UserID)   // pakai user_id dari students
-    announcement.Position = student.Position       // 🔥 ambil position dari tabel students
+	// Isi field announcement
+	announcement.Title = c.PostForm("title")
+	announcement.Content = c.PostForm("content")
+	announcement.AuthorID = uint(student.UserID) // pakai user_id dari students
+	announcement.Position = student.Position     // ambil position dari tabel students
 
-    if student.OrganizationID != nil {
-        orgID := uint(*student.OrganizationID)
-        announcement.OrganizationID = &orgID
-    }
+	if student.OrganizationID != nil {
+		orgID := uint(*student.OrganizationID)
+		announcement.OrganizationID = &orgID
+	}
 
-    // Handle file upload
-    file, err := c.FormFile("file")
-    if err == nil {
-        uploadPath := "uploads/announcements"
-        os.MkdirAll(uploadPath, os.ModePerm)
-        fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
-        filePath := filepath.Join(uploadPath, fileName)
+	// 🔥 Parsing start_date & end_date dari form-data
+	layout := "2006-01-02" // format tanggal yg dipakai di form (contoh: 2025-10-05)
+	if startDateStr := c.PostForm("start_date"); startDateStr != "" {
+		startDate, err := time.Parse(layout, startDateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format, use YYYY-MM-DD"})
+			return
+		}
+		announcement.StartDate = &startDate
+	}
 
-        if err := c.SaveUploadedFile(file, filePath); err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-            return
-        }
-        announcement.FileURL = filePath
-    }
+	if endDateStr := c.PostForm("end_date"); endDateStr != "" {
+		endDate, err := time.Parse(layout, endDateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_date format, use YYYY-MM-DD"})
+			return
+		}
+		announcement.EndDate = &endDate
+	}
 
-    // Simpan ke DB
-    if err := h.service.Createannouncement(&announcement); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Handle file upload
+	file, err := c.FormFile("file")
+	if err == nil {
+		uploadPath := "uploads/announcements"
+		os.MkdirAll(uploadPath, os.ModePerm)
+		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		filePath := filepath.Join(uploadPath, fileName)
 
-    c.JSON(http.StatusCreated, gin.H{
-        "status":  "success",
-        "message": "Announcement created successfully",
-        "data":    announcement,
-    })
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
+		announcement.FileURL = filePath
+	}
+
+	// Simpan ke DB
+	if err := h.service.Createannouncement(&announcement); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	announcement.Position = formatPosition(announcement.Position)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  "success",
+		"message": "Announcement created successfrange ully",
+		"data":    announcement,
+	})
 }
-
 
 // UpdateAnnouncement updates an existing announcement (with optional file update)
 func (h *AnnouncementHandler) UpdateAnnouncement(c *gin.Context) {

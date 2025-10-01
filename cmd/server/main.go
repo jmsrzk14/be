@@ -172,6 +172,7 @@ func main() {
 			studentRoutes.PUT("/visimisibem/:id", visimisiHandler.UpdateVisiMisiBem)
 			studentRoutes.PUT("/visimisiperiod/:id", visimisiHandler.UpdateVisiMisiPeriod)
 			studentRoutes.POST("/announcements", announcementHandler.CreateAnnouncement)
+			studentRoutes.GET("/announcement", announcementHandler.GetAllAnnouncements)
 
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)
