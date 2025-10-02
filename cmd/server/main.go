@@ -30,10 +30,6 @@ func main() {
 	// Set Gin mode
 	gin.SetMode(utils.GetEnvWithDefault("GIN_MODE", "debug"))
 
-	// Log environment variables for debugging (excluding sensitive data like password)
-	log.Printf("Konfigurasi: DB_HOST=%s, DB_PORT=%s, DB_USER=%s, DB_NAME=%s, DB_SSLMODE=%s",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_SSLMODE"))
-
 	// Initialize database connection
 	database.Initialize()
 
@@ -210,10 +206,10 @@ func main() {
 	// Add public endpoints
 	router.GET("/api/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)
 
-	// Log all registered routes
-	for _, ri := range router.Routes() {
-		log.Printf("Route: %s %s", ri.Method, ri.Path)
-	}
+	// // Log all registered routes
+	// for _, ri := range router.Routes() {
+	// 	log.Printf("Route: %s %s", ri.Method, ri.Path)
+	// }
 
 	log.Printf("Server berjalan di port %s", port)
 	err = router.Run(":" + port)
