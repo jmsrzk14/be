@@ -18,9 +18,13 @@ type Request struct {
 	ApproverID       int            `json:"approver_id" gorm:"default:null"`
 	Requester        *User          `json:"requester,omitempty" gorm:"foreignKey:RequesterID"`
 	Approver         *User          `json:"approver,omitempty" gorm:"foreignKey:ApproverID"`
+<<<<<<< HEAD
 	ImageURLKTM      string         `json:"image_url_ktm" gorm:"type:varchar(255)"`
 	ImageURLBRG      string         `json:"image_url_barang" gorm:"type:varchar(255)"`
 	Status           string         `json:"status" gorm:"type:enum('pending', 'approved', 'rejected');default:'pending';not null"`
+=======
+	Status           string         `json:"status" gorm:"default:'pending';not null"`
+>>>>>>> a1bf110 (be)
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index;uniqueIndex:idx_courses_code_deleted_at" json:"deleted_at,omitempty"`

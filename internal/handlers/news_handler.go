@@ -115,25 +115,41 @@ func (h *NewsHandler) CreateNews(c *gin.Context) {
 	if err == nil {
 		uploadPath := "uploads/news"
 		if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Tidak dapat membuat folder unggahan"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Tidak dapat membuat folder unggahan",
+			})
 			return
 		}
 
+		// buat nama file unik
 		fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), filepath.Base(file.Filename))
 		filePath := filepath.Join(uploadPath, fileName)
 
+		// simpan file ke folder
 		if err := c.SaveUploadedFile(file, filePath); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Gagal menyimpan file"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Gagal menyimpan file",
+			})
 			return
 		}
-		news.ImageURL = filePath
+
+		// simpan hanya nama file ke database
+		news.ImageURL = fileName
 	} else if err != http.ErrMissingFile {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Gagal memproses file: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Gagal memproses file: " + err.Error(),
+		})
 		return
 	}
 
 	if err := h.service.CreateNews(&news); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
 
