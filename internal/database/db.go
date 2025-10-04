@@ -86,15 +86,16 @@ func Initialize() {
 		&models.News{},
 		&models.Aspiration{},
 		&models.Galery{},
+		&models.Item{},
 		&models.Request{},
 	}
 
 	for _, model := range modelsToMigrate {
-		// err = DB.AutoMigrate(model)
+		err = DB.AutoMigrate(model)
 		if err != nil {
 			log.Fatalf("Error auto-migrating model %T: %v", model, err)
 		}
-		// log.Printf("%T table migrated successfully", model)
+		log.Printf("%T table migrated successfully", model)
 	}
 
 	log.Println("Database schema migrated successfully")
