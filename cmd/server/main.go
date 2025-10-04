@@ -50,6 +50,7 @@ func main() {
 	router.Static("/departments", "./uploads/departments")
 	router.Static("/bems", "./uploads/bems")
 	router.Static("/users", "./uploads/user")
+	router.Static("/requests", "./uploads/requests")
 
 	// Configure CORS
 	config := cors.DefaultConfig()
@@ -184,6 +185,8 @@ func main() {
 			studentRoutes.GET("/associations/:id", associationHandler.GetAssociationByID)
 			studentRoutes.GET("/profile", handlers.GetCurrentUser)
 			studentRoutes.PUT("/profile", handlers.EditProfile)
+
+			studentRoutes.POST("/requests", requestHandler.CreateRequest)
 		}
 
 		// Assistant routes
@@ -194,7 +197,7 @@ func main() {
 	}
 
 	// Start the server
-	port := utils.GetEnvWithDefault("SERVER_PORT", "9090")
+	port := utils.GetEnvWithDefault("SERVER_PORT", "8080")
 
 	// Add public endpoints
 	router.GET("/api/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)

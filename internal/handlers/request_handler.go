@@ -5,10 +5,12 @@ import (
 	"bem_be/internal/services"
 	"bem_be/internal/utils"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -126,60 +128,97 @@ func (h *RequestHandler) GetRequestByID(c *gin.Context) {
 // }
 
 func (h *RequestHandler) CreateRequest(c *gin.Context) {
+	// --- 1. Ambil User ID dari context ---
+	userIDClaim, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.ResponseHandler("error", "Unauthorized: userID not found in context", nil))
+		return
+	}
+
+	// --- 2. Cari student berdasarkan User ID dari context (dengan type assertion yang aman) ---
+	var userID int
+	switch v := userIDClaim.(type) {
+	case uint:
+		userID = int(v)
+	case float64:
+		userID = int(v)
+	case int:
+		userID = v
+	default:
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Invalid userID format in context", nil))
+		return
+	}
+
+	var student models.Student
+	studentPtr, err := h.service.GetStudentByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, utils.ResponseHandler("error", "Student associated with this token not found", nil))
+		return
+	}
+	student = *studentPtr // Dereference pointer
+
+	// --- 3. Buat direktori untuk uploads jika belum ada ---
+	uploadDir := filepath.Join("uploads", "requests")
+	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to create upload directory", nil))
+		return
+	}
+
+	// --- 4. Ambil data dari multipart/form-data ---
 	var request models.Request
 	request.Name = c.PostForm("name")
+	request.Activity = c.PostForm("activity")
+	request.Location = c.PostForm("location")
+	request.RequestPlan = c.PostForm("request_plan")
+	request.ReturnPlan = c.PostForm("return_plan")
+
 	quantityStr := c.DefaultPostForm("quantity", "1")
 	quantity, err := strconv.ParseUint(quantityStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quantity"})
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid quantity format", nil))
 		return
 	}
 	request.Quantity = uint(quantity)
-	request.RequestPlan = c.PostForm("request_plan")
-	request.ReturnPlan = c.PostForm("return_plan")
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-	request.RequesterID = int(userID.(uint))
-	var student *models.Student
-	student, err = h.service.GetStudentByUserID(request.RequesterID)
+	request.RequesterID = student.UserID
+
+	// --- 5. Proses Upload File ---
+	ktmFile, err := c.FormFile("image_ktm")
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "KTM image is required", nil))
 		return
 	}
-	log.Printf("Student OrganizationID: %d, OrganizationName: %s", student.OrganizationID, student.Organization.Name)
+	originalKtmFilename := strings.ReplaceAll(filepath.Base(ktmFile.Filename), " ", "_")
+	ktmFilename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), originalKtmFilename)
+	ktmPath := filepath.Join(uploadDir, ktmFilename)
+	if err := c.SaveUploadedFile(ktmFile, ktmPath); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to save KTM image", nil))
+		return
+	}
+	request.ImageURLKTM = ktmPath
 
-	if student.OrganizationID == nil || *student.OrganizationID == 0 {
-    c.JSON(http.StatusBadRequest, gin.H{"error": "Student is not assigned to any organization"})
-    return
-}
+	brgFile, err := c.FormFile("image_brg")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Item image is required", nil))
+		return
+	}
+	originalBrgFilename := strings.ReplaceAll(filepath.Base(brgFile.Filename), " ", "_")
+	brgFilename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), originalBrgFilename)
+	brgPath := filepath.Join(uploadDir, brgFilename)
+	if err := c.SaveUploadedFile(brgFile, brgPath); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to save item image", nil))
+		return
+	}
+	request.ImageURLBRG = brgPath
 
-	var orgID int
-if student.OrganizationID != nil {
-    orgID = *student.OrganizationID
-}
-request.OrganizationID = orgID
+	// --- 6. Set nilai default dan panggil service ---
+	request.Status = "pending"
+	if err := h.service.CreateRequest(&request); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to create request: "+err.Error(), nil))
+		return
+	}
 
-if student.Organization != nil {
-    request.OrganizationName = student.Organization.Name
-}
-
-request.Status = "Pending"
-request.CreatedAt = time.Now()
-request.UpdatedAt = time.Now()
-
-if err := h.service.CreateRequest(&request); err != nil {
-    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-    return
-}
-
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Request created successfully",
-		"data":    request,
-	})
+	// --- 7. Kirim response sukses ---
+	c.JSON(http.StatusCreated, utils.ResponseHandler("success", "Request created successfully", request))
 }
 
 func (h *RequestHandler) UpdateRequest(c *gin.Context) {
