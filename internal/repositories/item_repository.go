@@ -56,7 +56,7 @@ func (r *ItemRepository) GetAllItems(limit, offset int, search string) ([]models
     var departments []models.Item
     var total int64
 
-    query := r.db.Model(&models.Item{}).Where("category_id = ?", 2)
+    query := r.db.Model(&models.Item{})
 
     if search != "" {
         likeSearch := "%" + search + "%"
@@ -73,8 +73,6 @@ func (r *ItemRepository) GetAllItems(limit, offset int, search string) ([]models
 
     return departments, total, result.Error
 }
-
-
 
 // DeleteByID deletes a department by ID
 func (r *ItemRepository) DeleteByID(id uint) error {

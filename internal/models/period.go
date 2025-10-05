@@ -10,7 +10,6 @@ import (
 type Period struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`
 	OrganizationID int            `json:"organization_id" gorm:"not null"`
-	Organization   *Organization  `json:"organization" gorm:"foreignKey:ID;references:OrganizationID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Period         string         `gorm:"not null" json:"period"`
 	Vision         string         `gorm:"not null" json:"vision"`
 	Mission        string         `gorm:"not null" json:"mission"`

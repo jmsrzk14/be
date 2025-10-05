@@ -92,6 +92,8 @@ func main() {
 	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 	router.GET("/api/news", newsHandler.GetAllNews)
 	router.GET("/api/news/:id", newsHandler.GetNewsByID)
+	router.GET("/api/item", itemHandler.GetAllItems)
+	router.POST("/api/request", requestHandler.CreateRequest)
 
 	// Protected routes
 	authRequired := router.Group("/api")
@@ -312,6 +314,7 @@ func main() {
 // 	organizationHandler := handlers.NewOrganizationHandler(database.DB)
 // 	visimisiHandler := handlers.NewVisiMisiHandler(database.DB)
 // 	requestHandler := handlers.NewRequestHandler(database.DB)
+// 	itemHandler := handlers.NewItemHandler(database.DB)
 
 // 	// Guest Page
 // 	router.GET("/api/association", associationHandler.GetAllAssociationsGuest)
@@ -416,6 +419,14 @@ func main() {
 // 			studentRoutes.GET("/associations/:id", associationHandler.GetAssociationByID)
 // 			studentRoutes.GET("/profile", handlers.GetCurrentUser)
 // 			studentRoutes.PUT("/profile", handlers.EditProfile)
+
+// 			studentRoutes.POST("/requests", requestHandler.CreateRequest)
+
+// 			studentRoutes.GET("/item", itemHandler.GetAllItems)
+// 			studentRoutes.GET("/item/:id", itemHandler.GetItemByID)
+// 			studentRoutes.POST("/item", itemHandler.CreateItem)
+// 			studentRoutes.PUT("/item/:id", itemHandler.UpdateItem)
+// 			studentRoutes.DELETE("/item/:id", itemHandler.DeleteItem)
 // 		}
 
 // 		// Assistant routes

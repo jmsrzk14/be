@@ -93,38 +93,10 @@ func Initialize() {
 	for _, model := range modelsToMigrate {
 		err = DB.AutoMigrate(model)
 		if err != nil {
-			log.Fatalf("Error auto-migrating model %T: %v", model, err)
+			// log.Fatalf("Error auto-migrating model %T: %v", model, err)
 		}
-		log.Printf("%T table migrated successfully", model)
+		// log.Printf("%T table migrated successfully", model)
 	}
-
-	log.Println("Database schema migrated successfully")
-	
-	err = DB.AutoMigrate(&models.Aspiration{})
-	if err != nil {
-		log.Fatalf("Error auto-migrating Aspiration model: %v\n", err)
-	}
-	log.Println("Aspiration table migrated successfully")
-
-	log.Println("Database schema migrated successfully")
-
-	err = DB.AutoMigrate(&models.Galery{})
-	if err != nil {
-		log.Fatalf("Error auto-migrating Galery model: %v\n", err)
-	}
-	log.Println("Galery table migrated successfully")
-
-	err = DB.AutoMigrate(&models.Request{})
-	if err != nil {
-		log.Fatalf("Error auto-migrating Request model: %v\n", err)
-	}
-	log.Println("Request table migrated successfully")
-	
-	err = DB.AutoMigrate(&models.Announcement{})
-	if err != nil {
-		log.Fatalf("Error auto-migrating Request model: %v\n", err)
-	}
-	log.Println("Request table migrated successfully")
 
 	log.Println("Database schema migrated successfully")
 }
@@ -306,6 +278,10 @@ func GetDB() *gorm.DB {
 // 	}
 // 	log.Println("Request table migrated successfully")
 
+// 	err = DB.AutoMigrate(&models.Request{})
+// 	if err != nil {
+// 		log.Fatalf("Error auto-migrating Request model: %v\n", err)
+// 	}
 // 	log.Println("Database schema migrated successfully")
 
 // }

@@ -171,15 +171,8 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 	request.Location = c.PostForm("location")
 	request.RequestPlan = c.PostForm("request_plan")
 	request.ReturnPlan = c.PostForm("return_plan")
-
-	quantityStr := c.DefaultPostForm("quantity", "1")
-	quantity, err := strconv.ParseUint(quantityStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid quantity format", nil))
-		return
-	}
-	request.Quantity = uint(quantity)
-	request.RequesterID = student.UserID
+	request.Item = c.PostForm("item")
+	request.RequesterID = uint(student.UserID)
 
 	// --- 5. Proses Upload File ---
 	ktmFile, err := c.FormFile("image_ktm")
@@ -239,13 +232,7 @@ func (h *RequestHandler) UpdateRequest(c *gin.Context) {
 		return
 	}
 	request.Name = c.PostForm("name")
-	quantityStr := c.DefaultPostForm("quantity", "1")
-	quantity, err := strconv.ParseUint(quantityStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quantity"})
-		return
-	}
-	request.Quantity = uint(quantity)
+	request.Item = c.PostForm("item")
 	request.RequestPlan = c.PostForm("request_plan")
 	request.ReturnPlan = c.PostForm("return_plan")
 	request.UpdatedAt = time.Now()
