@@ -54,7 +54,6 @@ func main() {
 	router.Static("/requests", "./uploads/requests")
 	router.Static("/news", "./Uploads/news")
 
-
 	// Configure CORS
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:3000"} // []string{"*"}
@@ -167,6 +166,7 @@ func main() {
 			adminRoutes.GET("/request/:id", requestHandler.GetRequestByID)
 			adminRoutes.POST("/request", requestHandler.CreateRequest)
 			adminRoutes.PUT("/request/:id", requestHandler.UpdateRequest)
+			adminRoutes.PUT("/request/status/:id", requestHandler.UpdateRequestStatus)
 			adminRoutes.DELETE("/request/:id", requestHandler.DeleteRequest)
 
 			adminRoutes.GET("/item", itemHandler.GetAllItems)

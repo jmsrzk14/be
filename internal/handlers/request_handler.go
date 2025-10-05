@@ -286,3 +286,58 @@ func (h *RequestHandler) DeleteRequest(c *gin.Context) {
 		"message": "Request deleted successfully",
 	})
 }
+
+func (h *RequestHandler) UpdateRequestStatus(c *gin.Context) {
+	// 1. Ambil ID request dari parameter URL (misal: /api/admin/request/123/status)
+	idStr := c.Param("id")
+	requestID, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid request ID format", nil))
+		return
+	}
+
+	// 2. Ambil data 'status' dari body JSON yang dikirim admin
+	var input struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid input: 'status' field is required in JSON body", err.Error()))
+		return
+	}
+
+	// 3. Validasi nilai status yang diizinkan
+	if input.Status != "approved" && input.Status != "rejected" {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid status value. Must be 'approved' or 'rejected'", nil))
+		return
+	}
+
+	// 4. Ambil ID admin yang sedang login dari context (disediakan oleh middleware)
+	userIDClaim, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.ResponseHandler("error", "Unauthorized: Admin ID not found in context", nil))
+		return
+	}
+	var adminID int
+	switch v := userIDClaim.(type) {
+	case uint:
+		adminID = int(v)
+	case float64:
+		adminID = int(v)
+	case int:
+		adminID = v
+	default:
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Invalid admin ID format in context", nil))
+		return
+	}
+
+	// 5. Panggil service untuk melakukan pekerjaan berat
+	updatedRequest, err := h.service.ProcessRequestStatus(uint(requestID), input.Status, adminID)
+	if err != nil {
+		// Tampilkan error yang jelas dari service (misal: "stok tidak cukup")
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
+		return
+	}
+
+	// 6. Kirim response sukses dengan data request yang sudah terupdate
+	c.JSON(http.StatusOK, utils.ResponseHandler("success", "Request status updated successfully", updatedRequest))
+}

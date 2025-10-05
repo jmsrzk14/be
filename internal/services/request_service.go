@@ -4,13 +4,17 @@ import (
 	"bem_be/internal/models"
 	"bem_be/internal/repositories"
 	"errors"
+	"strconv"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type RequestService struct {
 	repository  *repositories.RequestRepository
 	studentRepo *repositories.StudentRepository
+	itemRepo    *repositories.ItemRepository
 	db          *gorm.DB
 }
 
@@ -18,6 +22,8 @@ func NewRequestService(db *gorm.DB) *RequestService {
 	return &RequestService{
 		repository:  repositories.NewRequestRepository(),
 		studentRepo: repositories.NewStudentRepository(),
+		itemRepo:    repositories.NewItemRepository(),
+		db:          db,
 	}
 }
 
@@ -74,4 +80,67 @@ func (s *RequestService) DeleteRequest(id uint) error {
 		return errors.New("request not found")
 	}
 	return s.repository.DeleteByID(id)
+}
+
+// Approve or Reject Request
+func (s *RequestService) ProcessRequestStatus(requestID uint, newStatus string, adminID int) (*models.Request, error) {
+	var finalRequest *models.Request
+
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Ambil & Kunci request yang akan diupdate
+		var request models.Request
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&request, requestID).Error; err != nil {
+			return errors.New("request not found")
+		}
+
+		// 2. Validasi status
+		if request.Status != "pending" {
+			return errors.New("request has already been processed")
+		}
+
+		// 3. Logika jika disetujui
+		if newStatus == "approved" {
+			// Panggil ItemRepository yang ada.
+			// Asumsi: request.Name SAMA DENGAN item.Code
+			// Kita harus query item di dalam transaksi untuk mengunci barisnya.
+			// Jadi, kita tidak bisa langsung pakai s.itemRepo.FindByName(request.Name)
+			// Kita akan query langsung ke tabelnya.
+			var item models.Item
+			if err := tx.Table("item").Where("code = ?", request.Name).Clauses(clause.Locking{Strength: "UPDATE"}).First(&item).Error; err != nil {
+				if err == gorm.ErrRecordNotFound {
+					return errors.New("master item with code '" + request.Name + "' not found")
+				}
+				return err
+			}
+
+			// Validasi stok (Amount)
+			if item.Amount < int(request.Quantity) {
+				return errors.New("insufficient stock for item '" + item.Name + "'. Available: " + strconv.Itoa(item.Amount) + ", Requested: " + strconv.Itoa(int(request.Quantity)))
+			}
+
+			// Kurangi stok
+			newAmount := item.Amount - int(request.Quantity)
+			if err := tx.Table("item").Where("id = ?", item.ID).Update("amount", newAmount).Error; err != nil {
+				return err
+			}
+		}
+
+		// 4. Update status request
+		request.Status = newStatus
+		request.ApproverID = adminID
+		request.UpdatedAt = time.Now()
+
+		if err := tx.Save(&request).Error; err != nil {
+			return err
+		}
+
+		finalRequest = &request
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repository.FindByID(finalRequest.ID)
 }
