@@ -128,25 +128,12 @@ func (h *RequestHandler) GetRequestByID(c *gin.Context) {
 // }
 
 func (h *RequestHandler) CreateRequest(c *gin.Context) {
-	// --- 1. Ambil User ID dari context ---
-	userIDClaim, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, utils.ResponseHandler("error", "Unauthorized: userID not found in context", nil))
-		return
-	}
+	userIDStr := c.PostForm("userID")	
 
-	// --- 2. Cari student berdasarkan User ID dari context (dengan type assertion yang aman) ---
-	var userID int
-	switch v := userIDClaim.(type) {
-	case uint:
-		userID = int(v)
-	case float64:
-		userID = int(v)
-	case int:
-		userID = v
-	default:
-		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Invalid userID format in context", nil))
-		return
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+	c.JSON(400, gin.H{"error": err})
+	return
 	}
 
 	var student models.Student
@@ -157,14 +144,12 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 	}
 	student = *studentPtr // Dereference pointer
 
-	// --- 3. Buat direktori untuk uploads jika belum ada ---
 	uploadDir := filepath.Join("uploads", "requests")
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to create upload directory", nil))
 		return
 	}
 
-	// --- 4. Ambil data dari multipart/form-data ---
 	var request models.Request
 	request.Name = c.PostForm("name")
 	request.Activity = c.PostForm("activity")

@@ -4,7 +4,7 @@ import (
 	"bem_be/internal/models"
 	"bem_be/internal/repositories"
 	"errors"
-	"strconv"
+	// "strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -112,22 +112,11 @@ func (s *RequestService) ProcessRequestStatus(requestID uint, newStatus string, 
 				}
 				return err
 			}
-
-			// Validasi stok (Amount)
-			if item.Amount < int(request.Quantity) {
-				return errors.New("insufficient stock for item '" + item.Name + "'. Available: " + strconv.Itoa(item.Amount) + ", Requested: " + strconv.Itoa(int(request.Quantity)))
-			}
-
-			// Kurangi stok
-			newAmount := item.Amount - int(request.Quantity)
-			if err := tx.Table("item").Where("id = ?", item.ID).Update("amount", newAmount).Error; err != nil {
-				return err
-			}
 		}
 
 		// 4. Update status request
 		request.Status = newStatus
-		request.ApproverID = adminID
+		// request.ApproverID = adminID
 		request.UpdatedAt = time.Now()
 
 		if err := tx.Save(&request).Error; err != nil {
