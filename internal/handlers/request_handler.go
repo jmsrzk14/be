@@ -4,6 +4,7 @@ import (
 	"bem_be/internal/models"
 	"bem_be/internal/services"
 	"bem_be/internal/utils"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -128,21 +129,24 @@ func (h *RequestHandler) GetRequestByID(c *gin.Context) {
 // }
 
 func (h *RequestHandler) CreateRequest(c *gin.Context) {
-	userIDStr := c.PostForm("userID")	
+	userIDStr := c.PostForm("userID")
+	if userIDStr == "" {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "userID is required", nil))
+		return
+	}
 
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
-	c.JSON(400, gin.H{"error": err})
-	return
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid userID format", nil))
+		return
 	}
 
-	var student models.Student
 	studentPtr, err := h.service.GetStudentByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusForbidden, utils.ResponseHandler("error", "Student associated with this token not found", nil))
 		return
 	}
-	student = *studentPtr // Dereference pointer
+	student := *studentPtr
 
 	uploadDir := filepath.Join("uploads", "requests")
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
@@ -151,15 +155,25 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 	}
 
 	var request models.Request
-	request.Name = c.PostForm("name")
-	request.Activity = c.PostForm("activity")
-	request.Location = c.PostForm("location")
-	request.RequestPlan = c.PostForm("request_plan")
-	request.ReturnPlan = c.PostForm("return_plan")
-	request.Item = c.PostForm("item")
 	request.RequesterID = uint(student.UserID)
+	request.RequestPlan = c.PostForm("startDate")
+	request.ReturnPlan = c.PostForm("endDate")
+	request.Activity = c.PostForm("tujuan")
+	request.Location = c.PostForm("lokasi")
+	request.Name = c.PostForm("nama")
 
-	// --- 5. Proses Upload File ---
+	itemsStr := c.PostForm("items")
+	if itemsStr != "" {
+		var itemIDs []int
+		if err := json.Unmarshal([]byte(itemsStr), &itemIDs); err == nil {
+			request.Item = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(itemIDs)), ","), "[]")
+		} else {
+			c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid items format", nil))
+			return
+		}
+	}
+
+	// === Upload file KTM ===
 	ktmFile, err := c.FormFile("image_ktm")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "KTM image is required", nil))
@@ -172,30 +186,28 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to save KTM image", nil))
 		return
 	}
-	request.ImageURLKTM = ktmPath
+	request.ImageURLKTM = ktmFilename // ✅ hanya nama file
 
+	// === Upload file Barang ===
 	brgFile, err := c.FormFile("image_brg")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Item image is required", nil))
-		return
+	if err == nil {
+		originalBrgFilename := strings.ReplaceAll(filepath.Base(brgFile.Filename), " ", "_")
+		brgFilename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), originalBrgFilename)
+		brgPath := filepath.Join(uploadDir, brgFilename)
+		if err := c.SaveUploadedFile(brgFile, brgPath); err != nil {
+			c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to save item image", nil))
+			return
+		}
+		request.ImageURLBRG = brgFilename // ✅ hanya nama file
 	}
-	originalBrgFilename := strings.ReplaceAll(filepath.Base(brgFile.Filename), " ", "_")
-	brgFilename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), originalBrgFilename)
-	brgPath := filepath.Join(uploadDir, brgFilename)
-	if err := c.SaveUploadedFile(brgFile, brgPath); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to save item image", nil))
-		return
-	}
-	request.ImageURLBRG = brgPath
 
-	// --- 6. Set nilai default dan panggil service ---
 	request.Status = "pending"
+
 	if err := h.service.CreateRequest(&request); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to create request: "+err.Error(), nil))
 		return
 	}
 
-	// --- 7. Kirim response sukses ---
 	c.JSON(http.StatusCreated, utils.ResponseHandler("success", "Request created successfully", request))
 }
 
