@@ -201,6 +201,8 @@ func main() {
 			studentRoutes.PUT("/request/:id", requestHandler.UpdateRequest)
 			studentRoutes.PUT("/request/image_barang/:id", requestHandler.UploadImageBarang)
 			studentRoutes.PUT("/request/status/:id", requestHandler.UpdateRequestStatus)
+			studentRoutes.PUT("/request/return/:id", requestHandler.ReturnBarang)
+			studentRoutes.PUT("/request/done/:id", requestHandler.EndRequestBarang)
 			studentRoutes.DELETE("/request/:id", requestHandler.DeleteRequest)
 
 			studentRoutes.GET("/item", itemHandler.GetAllItems)

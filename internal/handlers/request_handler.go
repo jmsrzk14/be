@@ -341,3 +341,46 @@ func (h *RequestHandler) UploadImageBarang(c *gin.Context) {
 		},
 	})
 }
+
+func (h *RequestHandler) ReturnBarang(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+		return
+	}
+
+	// Waktu sekarang
+	returnTime := time.Now()
+
+	// Ubah status dan isi kolom ReturnedAt
+	if err := h.service.ReturnedItem(uint(id), returnTime); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update request status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Barang berhasil dikembalikan",
+	})
+}
+
+func (h *RequestHandler) EndRequestBarang(c *gin.Context) {
+    idStr := c.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+        return
+    }
+
+    // Ubah status request jadi "selesai"
+    if err := h.service.UpdateStatusRequest(uint(id), "selesai"); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update status"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  "success",
+        "message": "Request status updated to 'selesai'",
+    })
+}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -167,6 +168,59 @@ func (s *RequestService) ProcessRequestStatus(requestID uint, status string, adm
 	return request, nil
 }
 
-func (s *RequestService) UpdateImageBarangAndStatus(id uint, fileName string, status string) error {
-	return s.repository.UpdateImageBarangAndStatus(id, fileName, status)
+func (s *RequestService) UpdateImageBarangAndStatus(id uint, filename, status string) error {
+	// 1. Ambil data request
+	request, err := s.repository.FindByID(id)
+	if err != nil {
+		return err
+	}
+	if request == nil {
+		return fmt.Errorf("request not found")
+	}
+
+	// 2. Decode item IDs dari request.Item
+	var itemIDs []uint
+	if err := json.Unmarshal([]byte(request.Item), &itemIDs); err != nil {
+		// Jika gagal decode JSON, fallback ke format "1,2,3"
+		parts := strings.Split(request.Item, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			if num, convErr := strconv.Atoi(p); convErr == nil {
+				itemIDs = append(itemIDs, uint(num))
+			}
+		}
+	}
+
+	// 3. Ambil semua item berdasarkan ID yang ditemukan
+	items, err := s.repository.FindItemsByIDs(itemIDs)
+	if err != nil {
+		return err
+	}
+
+	// 4. Kurangi stok setiap item
+	for _, item := range items {
+		if item.Amount > 0 {
+			item.Amount -= 1
+			if err := s.itemRepo.Update(&item); err != nil {
+				return fmt.Errorf("gagal update stok untuk item %s: %v", item.Name, err)
+			}
+		}
+	}
+
+	// 5. Update request (gambar + status)
+	request.ImageURLBRG = filename
+	request.Status = status
+
+	return s.repository.Update(request)
+}
+
+func (s *RequestService) UpdateStatusRequest(id uint, status string) error {
+	return s.repository.UpdateStatus(id, status)
+}
+
+func (s *RequestService) ReturnedItem(id uint, returnedAt time.Time) error {
+	return s.repository.UpdateStatusAndReturnTime(id, "selesai", returnedAt)
 }

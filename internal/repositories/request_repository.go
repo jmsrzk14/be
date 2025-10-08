@@ -4,6 +4,7 @@ import (
 	"bem_be/internal/database"
 	"bem_be/internal/models"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -87,5 +88,32 @@ func (r *RequestRepository) UpdateImageBarangAndStatus(id uint, fileName string,
 		Updates(map[string]interface{}{
 			"image_url_brg": fileName,
 			"status":        status,
+		}).Error
+}
+
+func (r *RequestRepository) UpdateStatus(id uint, status string) error {
+	var req models.Request
+
+	if err := r.db.First(&req, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("request not found")
+		}
+		return err
+	}
+
+	req.Status = status
+	if err := r.db.Save(&req).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RequestRepository) UpdateStatusAndReturnTime(id uint, status string, returnedAt time.Time) error {
+	return r.db.Model(&models.Request{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"status":      status,
+			"returned_at": returnedAt,
 		}).Error
 }
