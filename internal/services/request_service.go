@@ -3,12 +3,13 @@ package services
 import (
 	"bem_be/internal/models"
 	"bem_be/internal/repositories"
+	"encoding/json"
 	"errors"
-	// "strconv"
-	"time"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type RequestService struct {
@@ -55,10 +56,12 @@ func (s *RequestService) GetAllRequests(limit, offset int) ([]models.Request, in
 }
 
 type RequestWithStats struct {
-	Request models.Request `json:"request"`
+	Request   models.Request `json:"request"`
+	ItemNames []string       `json:"item_names"`
 }
 
-func (s *RequestService) GetRequestWithStats(id uint) (*RequestWithStats, error) {
+func (s *RequestService) GetRequestWithStats(id uint) (*models.RequestWithStats, error) {
+	// 1. Ambil data request
 	request, err := s.repository.FindByID(id)
 	if err != nil {
 		return nil, err
@@ -66,9 +69,63 @@ func (s *RequestService) GetRequestWithStats(id uint) (*RequestWithStats, error)
 	if request == nil {
 		return nil, errors.New("permintaan tidak ditemukan")
 	}
-	return &RequestWithStats{
-		Request: *request,
+
+	// 2. Ambil item IDs
+	var itemIDs []uint
+
+	// Coba decode JSON array dulu
+	if err := json.Unmarshal([]byte(request.Item), &itemIDs); err != nil {
+		// Kalau gagal, berarti formatnya kemungkinan "1,2"
+		strIDs := strings.Split(request.Item, ",")
+		for _, strID := range strIDs {
+			strID = strings.TrimSpace(strID)
+			if strID == "" {
+				continue
+			}
+			idInt, convErr := strconv.Atoi(strID)
+			if convErr == nil {
+				itemIDs = append(itemIDs, uint(idInt))
+			}
+		}
+	}
+
+	if len(itemIDs) == 0 {
+		return &models.RequestWithStats{
+			Request:   *request,
+			ItemNames: []string{},
+		}, nil
+	}
+
+	// 3. Ambil data items berdasarkan itemIDs
+	items, err := s.repository.FindItemsByIDs(itemIDs)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mengambil data item: %v", err)
+	}
+
+	// 4. Ambil hanya nama-nama item
+	itemNames := make([]string, len(items))
+	for i, item := range items {
+		itemNames[i] = item.Name
+	}
+
+	// 5. Gabungkan hasil
+	return &models.RequestWithStats{
+		Request:   *request,
+		ItemNames: itemNames,
 	}, nil
+}
+
+func (s *RequestService) GetRequestsByRequesterID(requesterID uint) ([]models.Request, error) {
+	requests, err := s.repository.FindAllByRequesterID(requesterID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mengambil data request: %v", err)
+	}
+
+	if len(requests) == 0 {
+		return nil, errors.New("belum ada request untuk user ini")
+	}
+
+	return requests, nil
 }
 
 func (s *RequestService) DeleteRequest(id uint) error {
@@ -83,53 +140,33 @@ func (s *RequestService) DeleteRequest(id uint) error {
 }
 
 // Approve or Reject Request
-func (s *RequestService) ProcessRequestStatus(requestID uint, newStatus string, adminID int) (*models.Request, error) {
-	var finalRequest *models.Request
-
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		// 1. Ambil & Kunci request yang akan diupdate
-		var request models.Request
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&request, requestID).Error; err != nil {
-			return errors.New("request not found")
-		}
-
-		// 2. Validasi status
-		if request.Status != "pending" {
-			return errors.New("request has already been processed")
-		}
-
-		// 3. Logika jika disetujui
-		if newStatus == "approved" {
-			// Panggil ItemRepository yang ada.
-			// Asumsi: request.Name SAMA DENGAN item.Code
-			// Kita harus query item di dalam transaksi untuk mengunci barisnya.
-			// Jadi, kita tidak bisa langsung pakai s.itemRepo.FindByName(request.Name)
-			// Kita akan query langsung ke tabelnya.
-			var item models.Item
-			if err := tx.Table("item").Where("code = ?", request.Name).Clauses(clause.Locking{Strength: "UPDATE"}).First(&item).Error; err != nil {
-				if err == gorm.ErrRecordNotFound {
-					return errors.New("master item with code '" + request.Name + "' not found")
-				}
-				return err
-			}
-		}
-
-		// 4. Update status request
-		request.Status = newStatus
-		// request.ApproverID = adminID
-		request.UpdatedAt = time.Now()
-
-		if err := tx.Save(&request).Error; err != nil {
-			return err
-		}
-
-		finalRequest = &request
-		return nil
-	})
-
+func (s *RequestService) ProcessRequestStatus(requestID uint, status string, adminID int, reason string) (*models.Request, error) {
+	// Cari request
+	request, err := s.repository.FindByID(requestID)
 	if err != nil {
 		return nil, err
 	}
+	if request == nil {
+		return nil, errors.New("Request tidak ditemukan")
+	}
 
-	return s.repository.FindByID(finalRequest.ID)
+	// Update status dan admin ID
+	request.Status = status
+	request.ApproverID = uint(adminID)
+
+	// Simpan alasan penolakan jika ada
+	if status == "rejected" {
+		request.Reason = reason
+	}
+
+	// Simpan perubahan
+	if err := s.repository.Update(request); err != nil {
+		return nil, err
+	}
+
+	return request, nil
+}
+
+func (s *RequestService) UpdateImageBarangAndStatus(id uint, fileName string, status string) error {
+	return s.repository.UpdateImageBarangAndStatus(id, fileName, status)
 }

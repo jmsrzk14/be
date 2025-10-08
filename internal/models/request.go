@@ -20,12 +20,18 @@ type Request struct {
 	Approver       *User          `json:"approver,omitempty" gorm:"foreignKey:ApproverID"`
 	ImageURLKTM    string         `json:"image_url_ktm" gorm:"type:varchar(255)"`
 	ImageURLBRG    string         `json:"image_url_barang" gorm:"type:varchar(255)"`
-	Status         string         `json:"status" gorm:"type:enum('pending', 'approved', 'rejected');default:'pending';not null"`
+	Status         string         `json:"status" gorm:"default:'pending';not null"`
+	Reason         string         `json:"reason"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index;uniqueIndex:idx_courses_code_deleted_at" json:"deleted_at,omitempty"`
 	OrganizationID uint           `json:"organization_id"`
 	Organization   *Organization  `json:"organization" gorm:"foreignKey:ID;references:OrganizationID;constraint:OnUpdate:CASCADE"`
+}
+
+type RequestWithStats struct {
+	Request   Request  `json:"request"`
+	ItemNames []string `json:"item_names"`
 }
 
 func (Request) TableName() string {

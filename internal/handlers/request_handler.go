@@ -91,42 +91,22 @@ func (h *RequestHandler) GetRequestByID(c *gin.Context) {
 	})
 }
 
-// func (h *RequestHandler) CreateRequest(c *gin.Context) {
-// 	var request models.Request
-// 	request.Name = c.PostForm("name")
-// 	quantityStr := c.DefaultPostForm("quantity", "1")
-// 	quantity, err := strconv.ParseUint(quantityStr, 10, 32)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quantity"})
-// 		return
-// 	}
-// 	request.Quantity = uint(quantity)
-// 	request.RequestPlan = c.PostForm("request_plan")
-// 	request.ReturnPlan = c.PostForm("return_plan")
-// 	userID, exists := c.Get("userID")
-// 	if !exists {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-// 		return
-// 	}
-// 	request.RequesterID = int(userID.(uint))
+func (h *RequestHandler) GetRequestsByUserID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid user ID format", nil))
+		return
+	}
 
-// 	var student *models.Student
-// 	student, err = h.service.GetStudentByUserID(request.RequesterID)
-// 	if err != nil {
-// 		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
-// 		return
-// 	}
-// 	request.OrganizationID = student.OrganizationID
-// 	request.OrganizationName = student.Organization.Name
-// 	request.Status = "Pending"
-// 	request.CreatedAt = time.Now()
-// 	request.UpdatedAt = time.Now()
-// 	if err := h.service.CreateRequest(&request); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-// 	c.JSON(http.StatusCreated, gin.H{"message": "Request created successfully", "data": request})
-// }
+	requests, err := h.service.GetRequestsByRequesterID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, utils.ResponseHandler("error", err.Error(), nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.ResponseHandler("success", "Requests retrieved successfully", requests))
+}
 
 func (h *RequestHandler) CreateRequest(c *gin.Context) {
 	userIDStr := c.PostForm("userID")
@@ -272,7 +252,7 @@ func (h *RequestHandler) DeleteRequest(c *gin.Context) {
 }
 
 func (h *RequestHandler) UpdateRequestStatus(c *gin.Context) {
-	// 1. Ambil ID request dari parameter URL (misal: /api/admin/request/123/status)
+	// 1. Ambil ID request dari parameter URL
 	idStr := c.Param("id")
 	requestID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -280,48 +260,84 @@ func (h *RequestHandler) UpdateRequestStatus(c *gin.Context) {
 		return
 	}
 
-	// 2. Ambil data 'status' dari body JSON yang dikirim admin
+	// 2. Ambil data dari body JSON
 	var input struct {
-		Status string `json:"status" binding:"required"`
+		Status   string `json:"status" binding:"required"`
+		UserID   uint   `json:"user_id" binding:"required"`
+		Reason   string `json:"reason"` // optional, hanya dipakai saat rejected
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid input: 'status' field is required in JSON body", err.Error()))
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid input: 'status' and 'user_id' are required", err.Error()))
 		return
 	}
 
-	// 3. Validasi nilai status yang diizinkan
+	// 3. Validasi nilai status
 	if input.Status != "approved" && input.Status != "rejected" {
 		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid status value. Must be 'approved' or 'rejected'", nil))
 		return
 	}
 
-	// 4. Ambil ID admin yang sedang login dari context (disediakan oleh middleware)
-	userIDClaim, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, utils.ResponseHandler("error", "Unauthorized: Admin ID not found in context", nil))
-		return
-	}
-	var adminID int
-	switch v := userIDClaim.(type) {
-	case uint:
-		adminID = int(v)
-	case float64:
-		adminID = int(v)
-	case int:
-		adminID = v
-	default:
-		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Invalid admin ID format in context", nil))
+	// 4. Jika status "rejected", pastikan alasan diberikan
+	if input.Status == "rejected" && strings.TrimSpace(input.Reason) == "" {
+		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Reason is required when rejecting a request", nil))
 		return
 	}
 
-	// 5. Panggil service untuk melakukan pekerjaan berat
-	updatedRequest, err := h.service.ProcessRequestStatus(uint(requestID), input.Status, adminID)
+	// 5. Kirim ke service untuk diproses
+	updatedRequest, err := h.service.ProcessRequestStatus(uint(requestID), input.Status, int(input.UserID), input.Reason)
 	if err != nil {
-		// Tampilkan error yang jelas dari service (misal: "stok tidak cukup")
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return
 	}
 
-	// 6. Kirim response sukses dengan data request yang sudah terupdate
+	// 6. Response sukses
 	c.JSON(http.StatusOK, utils.ResponseHandler("success", "Request status updated successfully", updatedRequest))
+}
+
+func (h *RequestHandler) UploadImageBarang(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+		return
+	}
+
+	// Ambil file dari form
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+
+	// Buat nama file unik
+	filename := fmt.Sprintf("%d_%s", id, file.Filename)
+	saveDir := "uploads/request/barang"
+	savePath := fmt.Sprintf("%s/%s", saveDir, filename)
+
+	// Pastikan folder ada
+	if err := os.MkdirAll(saveDir, os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+		return
+	}
+
+	// Simpan file ke disk
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Update nama file dan ubah status jadi 'diambil'
+	if err := h.service.UpdateImageBarangAndStatus(uint(id), filename, "diambil"); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update record"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "File uploaded and status updated to 'diambil'",
+		"data": gin.H{
+			"file_name": filename,
+			"status":    "diambil",
+		},
+	})
 }

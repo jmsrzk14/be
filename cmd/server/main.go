@@ -53,6 +53,8 @@ func main() {
 	router.Static("/users", "./uploads/user")
 	router.Static("/requests", "./uploads/requests")
 	router.Static("/news", "./Uploads/news")
+	router.Static("/request", "./Uploads/requests")
+	router.Static("/barang", "./Uploads/request/barang")
 
 	// Configure CORS
 	config := cors.DefaultConfig()
@@ -166,10 +168,6 @@ func main() {
 
 			adminRoutes.GET("/request", requestHandler.GetAllRequests)
 			adminRoutes.GET("/request/:id", requestHandler.GetRequestByID)
-			adminRoutes.POST("/request", requestHandler.CreateRequest)
-			adminRoutes.PUT("/request/:id", requestHandler.UpdateRequest)
-			adminRoutes.PUT("/request/status/:id", requestHandler.UpdateRequestStatus)
-			adminRoutes.DELETE("/request/:id", requestHandler.DeleteRequest)
 
 			adminRoutes.GET("/item", itemHandler.GetAllItems)
 			adminRoutes.GET("/item/:id", itemHandler.GetItemByID)
@@ -197,6 +195,13 @@ func main() {
 			studentRoutes.PUT("/profile", handlers.EditProfile)
 
 			studentRoutes.POST("/requests", requestHandler.CreateRequest)
+			studentRoutes.GET("/request", requestHandler.GetAllRequests)
+			studentRoutes.GET("/request/:id", requestHandler.GetRequestByID)
+			studentRoutes.GET("/request/user/:id", requestHandler.GetRequestsByUserID)
+			studentRoutes.PUT("/request/:id", requestHandler.UpdateRequest)
+			studentRoutes.PUT("/request/image_barang/:id", requestHandler.UploadImageBarang)
+			studentRoutes.PUT("/request/status/:id", requestHandler.UpdateRequestStatus)
+			studentRoutes.DELETE("/request/:id", requestHandler.DeleteRequest)
 
 			studentRoutes.GET("/item", itemHandler.GetAllItems)
 			studentRoutes.GET("/item/:id", itemHandler.GetItemByID)

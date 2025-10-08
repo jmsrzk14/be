@@ -3,6 +3,7 @@ package repositories
 import (
 	"bem_be/internal/database"
 	"bem_be/internal/models"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -27,11 +28,37 @@ func (r *RequestRepository) Update(request *models.Request) error {
 
 func (r *RequestRepository) FindByID(id uint) (*models.Request, error) {
 	var request models.Request
-	err := r.db.First(&request, id).Error
-	if err != nil {
+	if err := r.db.First(&request, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &request, nil
+}
+
+func (r *RequestRepository) FindAllByRequesterID(requesterID uint) ([]models.Request, error) {
+	var requests []models.Request
+	if err := r.db.Where("requester_id = ?", requesterID).Find(&requests).Error; err != nil {
+		return nil, err
+	}
+	return requests, nil
+}
+
+func (r *RequestRepository) FindItemsByIDs(itemIDs []uint) ([]models.Item, error) {
+	var items []models.Item
+	if err := r.db.Where("id IN ?", itemIDs).Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *RequestRepository) FindItemsByUserIDs(itemIDs []uint) ([]models.Item, error) {
+	var items []models.Item
+	if err := r.db.Where("id IN ?", itemIDs).Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 func (r *RequestRepository) GetAllRequests(limit, offset int) ([]models.Request, int64, error) {
@@ -52,4 +79,13 @@ func (r *RequestRepository) GetAllRequests(limit, offset int) ([]models.Request,
 
 func (r *RequestRepository) DeleteByID(id uint) error {
 	return r.db.Delete(&models.Request{}, id).Error
+}
+
+func (r *RequestRepository) UpdateImageBarangAndStatus(id uint, fileName string, status string) error {
+	return r.db.Model(&models.Request{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"image_url_brg": fileName,
+			"status":        status,
+		}).Error
 }
