@@ -32,7 +32,7 @@ COPY --from=builder /app/delpresence-server .
 COPY .env .
 
 # Expose port
-EXPOSE 8080
+EXPOSE 9090
 
 # Command
 CMD ["./delpresence-server"] 

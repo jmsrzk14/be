@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "8080:8080"
+      - "9090:9090"
     depends_on:
       db:
         condition: service_healthy
@@ -18,7 +18,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_NAME=delpresence
       - JWT_SECRET=${JWT_SECRET:-delpresence_secret_key}
-      - SERVER_PORT=8080
+      - SERVER_PORT=9090
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://delpresence.example.com}
     networks:
       - delpresence-network
