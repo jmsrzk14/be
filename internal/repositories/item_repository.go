@@ -52,7 +52,7 @@ func (r *ItemRepository) FindByName(code string) (*models.Item, error) {
 }
 
 // GetAllAssociations returns all associations from the database with optional search filter
-func (r *ItemRepository) GetAllItems(limit, offset int, search string) ([]models.Item, int64, error) {
+func (r *ItemRepository) GetAllItemsSarpras(limit, offset int, search string) ([]models.Item, int64, error) {
     var departments []models.Item
     var total int64
 
@@ -60,7 +60,29 @@ func (r *ItemRepository) GetAllItems(limit, offset int, search string) ([]models
 
     if search != "" {
         likeSearch := "%" + search + "%"
-        query = query.Where("name LIKE ?", likeSearch)
+        query = query.Where("name LIKE ? AND category = 1", likeSearch)
+    }
+
+    query.Count(&total)
+
+    result := query.
+        Order("name ASC").
+        Limit(limit).
+        Offset(offset).
+        Find(&departments)
+
+    return departments, total, result.Error
+}
+
+func (r *ItemRepository) GetAllItemsDepol(limit, offset int, search string) ([]models.Item, int64, error) {
+    var departments []models.Item
+    var total int64
+
+    query := r.db.Model(&models.Item{})
+
+    if search != "" {
+        likeSearch := "%" + search + "%"
+        query = query.Where("name LIKE ? AND category = 2", likeSearch)
     }
 
     query.Count(&total)
@@ -113,7 +135,13 @@ func (r *ItemRepository) RestoreByName(code string) (*models.Item, error) {
 	return r.FindByID(deletedItem.ID)
 }
 
-func (r *ItemRepository) GetAllItemsGuest() ([]models.Item, error) {
+func (r *ItemRepository) GetAllItemsGuestSarpras() ([]models.Item, error) {
+    var associations []models.Item
+    err := r.db.Where("category_id = ?", 1).Find(&associations).Error
+    return associations, err
+}
+
+func (r *ItemRepository) GetAllItemsGuestDepol() ([]models.Item, error) {
     var associations []models.Item
     err := r.db.Where("category_id = ?", 2).Find(&associations).Error
     return associations, err

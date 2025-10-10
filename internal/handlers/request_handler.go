@@ -141,6 +141,7 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 	request.Activity = c.PostForm("tujuan")
 	request.Location = c.PostForm("lokasi")
 	request.Name = c.PostForm("nama")
+	request.Category = 1;
 
 	itemsStr := c.PostForm("items")
 	if itemsStr != "" {
@@ -181,7 +182,7 @@ func (h *RequestHandler) CreateRequest(c *gin.Context) {
 		request.ImageURLBRG = brgFilename // ✅ hanya nama file
 	}
 
-	request.Status = "pending"
+	request.Status = "pending";
 
 	if err := h.service.CreateRequest(&request); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to create request: "+err.Error(), nil))
@@ -251,8 +252,8 @@ func (h *RequestHandler) DeleteRequest(c *gin.Context) {
 	})
 }
 
+// 1. Ambil ID request dari parameter URL
 func (h *RequestHandler) UpdateRequestStatus(c *gin.Context) {
-	// 1. Ambil ID request dari parameter URL
 	idStr := c.Param("id")
 	requestID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -350,10 +351,16 @@ func (h *RequestHandler) ReturnBarang(c *gin.Context) {
 		return
 	}
 
-	// Waktu sekarang
+	// Waktu pengembalian sekarang
 	returnTime := time.Now()
 
-	// Ubah status dan isi kolom ReturnedAt
+	// 1️⃣ Tambahkan kembali stok barang
+	if err := h.service.UpdateItemStockOnTaken(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to restore item stock"})
+		return
+	}
+
+	// 2️⃣ Update status & kolom ReturnedAt
 	if err := h.service.ReturnedItem(uint(id), returnTime); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update request status"})
 		return
@@ -361,7 +368,7 @@ func (h *RequestHandler) ReturnBarang(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "Barang berhasil dikembalikan",
+		"message": "Barang berhasil dikembalikan dan stok diperbarui",
 	})
 }
 

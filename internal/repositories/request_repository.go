@@ -113,7 +113,13 @@ func (r *RequestRepository) UpdateStatusAndReturnTime(id uint, status string, re
 	return r.db.Model(&models.Request{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
-			"status":      status,
-			"returned_at": returnedAt,
+			"status":    status,
+			"return_at": returnedAt,
 		}).Error
+}
+
+func (r *RequestRepository) IncreaseItemAmount(itemID uint, amount int) error {
+	return r.db.Model(&models.Item{}).
+		Where("id = ?", itemID).
+		Update("amount", gorm.Expr("amount + ?", amount)).Error
 }

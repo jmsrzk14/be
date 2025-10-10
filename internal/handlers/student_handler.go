@@ -10,6 +10,8 @@ import (
 
 	"bem_be/internal/services"
 	"bem_be/internal/utils"
+	"bem_be/internal/database"
+	"bem_be/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -86,10 +88,27 @@ func (h *StudentHandler) GetStudentByID(c *gin.Context) {
 		return
 	}
 
+	// Ambil data organisasi berdasarkan OrganizationID
+	var organizationName string
+	if student.OrganizationID != nil && *student.OrganizationID != 0 {
+		var organization models.Organization
+		if err := database.DB.First(&organization, *student.OrganizationID).Error; err == nil {
+			organizationName = organization.Name
+		}
+	}
+
+	// Gabungkan ke response JSON
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "Student retrieved successfully",
-		"data":    student,
+		"data": gin.H{
+			"id":              student.ID,
+			"name":            student.FullName,
+			"email":           student.Email,
+			"organization_id": student.OrganizationID,
+			"organization":    organizationName, // tampilkan nama organisasi
+			// tambahkan field lain dari student kalau perlu
+		},
 	})
 }
 

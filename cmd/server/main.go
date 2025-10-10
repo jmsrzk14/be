@@ -94,7 +94,8 @@ func main() {
 	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 	router.GET("/api/news", newsHandler.GetAllNews)
 	router.GET("/api/news/:id", newsHandler.GetNewsByID)
-	router.GET("/api/item", itemHandler.GetAllItems)
+	router.GET("/api/item_sarpras", itemHandler.GetAllItemsSarpras)
+	router.GET("/api/item_depol", itemHandler.GetAllItemsDepol)
 	router.POST("/api/request", requestHandler.CreateRequest)
 
 	// Protected routes
@@ -169,8 +170,8 @@ func main() {
 			adminRoutes.GET("/request", requestHandler.GetAllRequests)
 			adminRoutes.GET("/request/:id", requestHandler.GetRequestByID)
 
-			adminRoutes.GET("/item", itemHandler.GetAllItems)
-			adminRoutes.GET("/item/:id", itemHandler.GetItemByID)
+			adminRoutes.GET("/item", itemHandler.GetAllItemsSarpras)
+			adminRoutes.GET("/item/:id", itemHandler.GetItemSarparsByID)
 		}
 
 		// Student routes
@@ -205,11 +206,17 @@ func main() {
 			studentRoutes.PUT("/request/done/:id", requestHandler.EndRequestBarang)
 			studentRoutes.DELETE("/request/:id", requestHandler.DeleteRequest)
 
-			studentRoutes.GET("/item", itemHandler.GetAllItems)
-			studentRoutes.GET("/item/:id", itemHandler.GetItemByID)
-			studentRoutes.POST("/item", itemHandler.CreateItem)
-			studentRoutes.PUT("/item/:id", itemHandler.UpdateItem)
-			studentRoutes.DELETE("/item/:id", itemHandler.DeleteItem)
+			studentRoutes.GET("/item_sarpras", itemHandler.GetAllItemsSarpras)
+			studentRoutes.GET("/item_sarpras/:id", itemHandler.GetItemSarparsByID)
+			studentRoutes.POST("/item_sarpras", itemHandler.CreateItemSarpras)
+			studentRoutes.PUT("/item_sarpras/:id", itemHandler.UpdateItemSarpras)
+			studentRoutes.DELETE("/item_sarpras/:id", itemHandler.DeleteItemSarpras)
+
+			studentRoutes.GET("/item_depol", itemHandler.GetAllItemsDepol)
+			studentRoutes.GET("/item_depol/:id", itemHandler.GetItemDepolByID)
+			studentRoutes.POST("/item_depol", itemHandler.CreateItemDepol)
+			studentRoutes.PUT("/item_depol/:id", itemHandler.UpdateItemDepol)
+			studentRoutes.DELETE("/item_depol/:id", itemHandler.DeleteItemDepol)
 		}
 
 		// Assistant routes

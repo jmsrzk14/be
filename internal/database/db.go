@@ -93,9 +93,9 @@ func Initialize() {
 	for _, model := range modelsToMigrate {
 		err = DB.AutoMigrate(model)
 		if err != nil {
-			// log.Fatalf("Error auto-migrating model %T: %v", model, err)
+			log.Fatalf("Error auto-migrating model %T: %v", model, err)
 		}
-		// log.Printf("%T table migrated successfully", model)
+		log.Printf("%T table migrated successfully", model)
 	}
 
 	log.Println("Database schema migrated successfully")

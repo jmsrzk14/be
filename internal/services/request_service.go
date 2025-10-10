@@ -222,5 +222,51 @@ func (s *RequestService) UpdateStatusRequest(id uint, status string) error {
 }
 
 func (s *RequestService) ReturnedItem(id uint, returnedAt time.Time) error {
-	return s.repository.UpdateStatusAndReturnTime(id, "selesai", returnedAt)
+	return s.repository.UpdateStatusAndReturnTime(id, "dikembalikan", returnedAt)
+}
+
+func (s *RequestService) UpdateItemStockOnTaken(id uint) error {
+	// 1. Ambil data request
+	request, err := s.repository.FindByID(id)
+	if err != nil {
+		return err
+	}
+	if request == nil {
+		return fmt.Errorf("request not found")
+	}
+
+	// 2. Decode item IDs dari kolom request.Item
+	var itemIDs []uint
+	if err := json.Unmarshal([]byte(request.Item), &itemIDs); err != nil {
+		// Fallback: handle format "1,2,3"
+		parts := strings.Split(request.Item, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			if num, convErr := strconv.Atoi(p); convErr == nil {
+				itemIDs = append(itemIDs, uint(num))
+			}
+		}
+	}
+
+	// 3. Ambil semua item berdasarkan ID
+	items, err := s.repository.FindItemsByIDs(itemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to get items: %v", err)
+	}
+
+	// 4. Kurangi stok setiap item (1 per item)
+	for _, item := range items {
+		if item.Amount > 0 {
+			item.Amount += 1
+			if err := s.itemRepo.Update(&item); err != nil {
+				return fmt.Errorf("failed to update stock for item %s: %v", item.Name, err)
+			}
+		}
+	}
+
+	// 5. Tidak ubah status, tidak ubah image
+	return nil
 }
