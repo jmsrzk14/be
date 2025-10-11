@@ -85,6 +85,7 @@ func main() {
 	visimisiHandler := handlers.NewVisiMisiHandler(database.DB)
 	requestHandler := handlers.NewRequestHandler(database.DB)
 	itemHandler := handlers.NewItemHandler(database.DB)
+	aspirationHandler := *handlers.NewAspirationHandler(database.DB)
 
 	// Guest Page
 	router.GET("/api/association", associationHandler.GetAllAssociationsGuest)
@@ -172,6 +173,8 @@ func main() {
 
 			adminRoutes.GET("/item", itemHandler.GetAllItemsSarpras)
 			adminRoutes.GET("/item/:id", itemHandler.GetItemSarparsByID)
+
+			adminRoutes.GET("/aspirations", aspirationHandler.GetAllAspirations)
 		}
 
 		// Student routes
@@ -217,6 +220,8 @@ func main() {
 			studentRoutes.POST("/item_depol", itemHandler.CreateItemDepol)
 			studentRoutes.PUT("/item_depol/:id", itemHandler.UpdateItemDepol)
 			studentRoutes.DELETE("/item_depol/:id", itemHandler.DeleteItemDepol)
+
+			studentRoutes.POST("/aspirations", aspirationHandler.CreateAspiration)
 		}
 
 		// Assistant routes

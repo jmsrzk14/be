@@ -84,10 +84,10 @@ func Initialize() {
 		&models.Report{},
 		&models.Finance{},
 		&models.News{},
-		&models.Aspiration{},
 		&models.Galery{},
 		&models.Item{},
 		&models.Request{},
+		&models.Aspiration{},
 	}
 
 	for _, model := range modelsToMigrate {
