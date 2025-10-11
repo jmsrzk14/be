@@ -86,6 +86,7 @@ func main() {
 	requestHandler := handlers.NewRequestHandler(database.DB)
 	itemHandler := handlers.NewItemHandler(database.DB)
 	aspirationHandler := *handlers.NewAspirationHandler(database.DB)
+	eventHandler := handlers.NewEventHandler(database.DB)
 
 	// Guest Page
 	router.GET("/api/association", associationHandler.GetAllAssociationsGuest)
@@ -95,9 +96,7 @@ func main() {
 	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 	router.GET("/api/news", newsHandler.GetAllNews)
 	router.GET("/api/news/:id", newsHandler.GetNewsByID)
-	router.GET("/api/item_sarpras", itemHandler.GetAllItemsSarpras)
-	router.GET("/api/item_depol", itemHandler.GetAllItemsDepol)
-	router.POST("/api/request", requestHandler.CreateRequest)
+	router.GET("/api/events", eventHandler.GetEventsCurrentMonth)
 
 	// Protected routes
 	authRequired := router.Group("/api")
@@ -168,8 +167,11 @@ func main() {
 			adminRoutes.PUT("/department/:id", departmentHandler.UpdateDepartment)
 			adminRoutes.DELETE("/department/:id", departmentHandler.DeleteDepartment)
 
-			adminRoutes.GET("/request", requestHandler.GetAllRequests)
-			adminRoutes.GET("/request/:id", requestHandler.GetRequestByID)
+			adminRoutes.GET("/request_sarpras", requestHandler.GetAllRequestsSarpras)
+			adminRoutes.GET("/request_sarpras/:id", requestHandler.GetRequestByIDSarpras)
+
+			adminRoutes.GET("/request_depol", requestHandler.GetAllRequestsDepol)
+			adminRoutes.GET("/request_depol/:id", requestHandler.GetRequestByIDDepol)
 
 			adminRoutes.GET("/item", itemHandler.GetAllItemsSarpras)
 			adminRoutes.GET("/item/:id", itemHandler.GetItemSarparsByID)
@@ -198,16 +200,27 @@ func main() {
 			studentRoutes.GET("/profile", handlers.GetCurrentUser)
 			studentRoutes.PUT("/profile", handlers.EditProfile)
 
-			studentRoutes.POST("/requests", requestHandler.CreateRequest)
-			studentRoutes.GET("/request", requestHandler.GetAllRequests)
-			studentRoutes.GET("/request/:id", requestHandler.GetRequestByID)
-			studentRoutes.GET("/request/user/:id", requestHandler.GetRequestsByUserID)
-			studentRoutes.PUT("/request/:id", requestHandler.UpdateRequest)
-			studentRoutes.PUT("/request/image_barang/:id", requestHandler.UploadImageBarang)
-			studentRoutes.PUT("/request/status/:id", requestHandler.UpdateRequestStatus)
-			studentRoutes.PUT("/request/return/:id", requestHandler.ReturnBarang)
-			studentRoutes.PUT("/request/done/:id", requestHandler.EndRequestBarang)
-			studentRoutes.DELETE("/request/:id", requestHandler.DeleteRequest)
+			studentRoutes.POST("/requests_sarpras", requestHandler.CreateRequestSarpras)
+			studentRoutes.GET("/request_sarpras", requestHandler.GetAllRequestsSarpras)
+			studentRoutes.GET("/request_sarpras/:id", requestHandler.GetRequestByIDSarpras)
+			studentRoutes.GET("/request_sarpras/user/:id", requestHandler.GetRequestsByUserIDSapras)
+			studentRoutes.PUT("/request_sarpras/:id", requestHandler.UpdateRequestSarpras)
+			studentRoutes.PUT("/request_sarpras/image_barang/:id", requestHandler.UploadImageBarangSarpras)
+			studentRoutes.PUT("/request_sarpras/status/:id", requestHandler.UpdateRequestSarprasStatus)
+			studentRoutes.PUT("/request_sarpras/return/:id", requestHandler.ReturnBarangSarpras)
+			studentRoutes.PUT("/request_sarpras/done/:id", requestHandler.EndRequestBarangSarpras)
+			studentRoutes.DELETE("/request_sarpras/:id", requestHandler.DeleteRequestSarpras)
+
+			studentRoutes.POST("/requests_depol", requestHandler.CreateRequestDepol)
+			studentRoutes.GET("/request_depol", requestHandler.GetAllRequestsDepol)
+			studentRoutes.GET("/request_depol/:id", requestHandler.GetRequestByIDDepol)
+			studentRoutes.GET("/request_depol/user/:id", requestHandler.GetRequestsByUserIDDepol)
+			studentRoutes.PUT("/request_depol/:id", requestHandler.UpdateRequestDepol)
+			studentRoutes.PUT("/request_depol/image_barang/:id", requestHandler.UploadImageBarangDepol)
+			studentRoutes.PUT("/request_depol/status/:id", requestHandler.UpdateRequestDepolStatus)
+			studentRoutes.PUT("/request_depol/return/:id", requestHandler.ReturnBarangDepol)
+			studentRoutes.PUT("/request_depol/done/:id", requestHandler.EndRequestBarangDepol)
+			studentRoutes.DELETE("/request_depol/:id", requestHandler.DeleteRequestDepol)
 
 			studentRoutes.GET("/item_sarpras", itemHandler.GetAllItemsSarpras)
 			studentRoutes.GET("/item_sarpras/:id", itemHandler.GetItemSarparsByID)
@@ -222,6 +235,11 @@ func main() {
 			studentRoutes.DELETE("/item_depol/:id", itemHandler.DeleteItemDepol)
 
 			studentRoutes.POST("/aspirations", aspirationHandler.CreateAspiration)
+
+			studentRoutes.POST("/events", eventHandler.CreateEvent)
+			studentRoutes.PUT("/events/:id", eventHandler.UpdateEvent)
+			studentRoutes.GET("/events/current-month", eventHandler.GetEventsCurrentMonth)
+			studentRoutes.DELETE("/events/:id", eventHandler.DeleteEvent)
 		}
 
 		// Assistant routes

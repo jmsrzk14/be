@@ -52,10 +52,6 @@ func (h *AnnouncementHandler) GetAllAnnouncements(c *gin.Context) {
 		return
 	}
 
-	// 🔥 Format posisi biar rapi
-	for i := range announcements {
-		announcements[i].Position = formatPosition(announcements[i].Position)
-	}
 	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 
 	metadata := utils.PaginationMetadata{
@@ -128,7 +124,6 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 	announcement.Title = c.PostForm("title")
 	announcement.Content = c.PostForm("content")
 	announcement.AuthorID = uint(student.UserID) // pakai user_id dari students
-	announcement.Position = student.Position     // ambil position dari tabel students
 
 	if student.OrganizationID != nil {
 		orgID := uint(*student.OrganizationID)
@@ -175,7 +170,6 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	announcement.Position = formatPosition(announcement.Position)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",

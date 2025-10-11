@@ -88,6 +88,7 @@ func Initialize() {
 		&models.Item{},
 		&models.Request{},
 		&models.Aspiration{},
+		&models.Calender{},
 	}
 
 	for _, model := range modelsToMigrate {
