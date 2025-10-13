@@ -52,8 +52,8 @@ func (s *RequestService) GetRequestByIDSarpras(id uint) (*models.Request, error)
 	return s.repository.FindByIDSarpras(id)
 }
 
-func (s *RequestService) GetAllRequestsSarpras(limit, offset int) ([]models.Request, int64, error) {
-	return s.repository.GetAllRequestsSarpras(limit, offset)
+func (s *RequestService) GetAllRequestsSarpras(category, limit, offset int) ([]models.Request, int64, error) {
+	return s.repository.GetAllRequestsSarpras(category, limit, offset)
 }
 
 type RequestWithStatsSarpras struct {
@@ -294,8 +294,8 @@ func (s *RequestService) GetRequestByIDDepol(id uint) (*models.Request, error) {
 	return s.repository.FindByIDDepol(id)
 }
 
-func (s *RequestService) GetAllRequestsDepol(limit, offset int) ([]models.Request, int64, error) {
-	return s.repository.GetAllRequestsDepol(limit, offset)
+func (s *RequestService) GetAllRequestsDepol(category, limit, offset int) ([]models.Request, int64, error) {
+	return s.repository.GetAllRequestsDepol(category, limit, offset)
 }
 
 type RequestWithStatsDepol struct {

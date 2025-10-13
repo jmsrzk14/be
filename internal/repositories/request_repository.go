@@ -62,16 +62,17 @@ func (r *RequestRepository) FindItemsByUserIDsSarpras(itemIDs []uint) ([]models.
 	return items, nil
 }
 
-func (r *RequestRepository) GetAllRequestsSarpras(limit, offset int) ([]models.Request, int64, error) {
+func (r *RequestRepository) GetAllRequestsSarpras(category, limit, offset int) ([]models.Request, int64, error) {
 	var requests []models.Request
 	var total int64
 
-	query := r.db.Model(&models.Request{})
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.Limit(limit).Offset(offset).Find(&requests).Error; err != nil {
+	if err := r.db.
+		Where("category = ?", category).
+		Limit(limit).
+		Offset(offset).
+		Find(&requests).
+		Offset(-1).Limit(-1).
+		Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -167,16 +168,17 @@ func (r *RequestRepository) FindItemsByUserIDsDepol(itemIDs []uint) ([]models.It
 	return items, nil
 }
 
-func (r *RequestRepository) GetAllRequestsDepol(limit, offset int) ([]models.Request, int64, error) {
+func (r *RequestRepository) GetAllRequestsDepol(category, limit, offset int) ([]models.Request, int64, error) {
 	var requests []models.Request
 	var total int64
 
-	query := r.db.Model(&models.Request{})
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.Limit(limit).Offset(offset).Find(&requests).Error; err != nil {
+	if err := r.db.
+		Where("category = ?", category).
+		Limit(limit).
+		Offset(offset).
+		Find(&requests).
+		Offset(-1).Limit(-1).
+		Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 

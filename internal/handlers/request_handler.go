@@ -41,7 +41,9 @@ func (h *RequestHandler) GetAllRequestsSarpras(c *gin.Context) {
 
 	offset := (page - 1) * perPage
 
-	request, total, err := h.service.GetAllRequestsSarpras(perPage, offset)
+	category := 2
+
+	requests, total, err := h.service.GetAllRequestsDepol(category, perPage, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return
@@ -62,9 +64,9 @@ func (h *RequestHandler) GetAllRequestsSarpras(c *gin.Context) {
 
 	response := utils.MetadataFormatResponse(
 		"success",
-		"Berhasil mendapatkan daftar permintaan peminjaman",
+		"Berhasil mendapatkan daftar permintaan peminjaman kategori Depol",
 		metadata,
-		request,
+		requests,
 	)
 
 	c.JSON(http.StatusOK, response)
@@ -405,7 +407,9 @@ func (h *RequestHandler) GetAllRequestsDepol(c *gin.Context) {
 
 	offset := (page - 1) * perPage
 
-	request, total, err := h.service.GetAllRequestsDepol(perPage, offset)
+	category := 1
+
+	requests, total, err := h.service.GetAllRequestsDepol(category, perPage, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return
@@ -426,9 +430,9 @@ func (h *RequestHandler) GetAllRequestsDepol(c *gin.Context) {
 
 	response := utils.MetadataFormatResponse(
 		"success",
-		"Berhasil mendapatkan daftar permintaan peminjaman",
+		"Berhasil mendapatkan daftar permintaan peminjaman kategori Depol",
 		metadata,
-		request,
+		requests,
 	)
 
 	c.JSON(http.StatusOK, response)
