@@ -84,7 +84,15 @@ func (h *AnnouncementHandler) GetAnnouncementByID(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.GetAnnouncementWithStats(uint(id))
+	stats := c.Query("stats")
+	var result interface{}
+
+	if stats == "true" {
+		result, err = h.service.GetAnnouncementWithStats(uint(id))
+	} else {
+		result, err = h.service.GetAnnouncementByID(uint(id))
+	}
+
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Announcement not found"})
 		return

@@ -75,10 +75,16 @@ func (s *AnnouncementService) Updateannouncement(announcement *models.Announceme
 }
 
 // GetannouncementByID gets a announcement by ID
-func (s *AnnouncementService) GetannouncementByID(id uint) (*models.Announcement, error) {
-	return s.repository.FindByID(id)
+func (s *AnnouncementService) GetAnnouncementByID(id uint) (*models.Announcement, error) {
+	announcement, err := s.repository.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("berita tidak ditemukan")
+		}
+		return nil, err
+	}
+	return announcement, nil
 }
-
 // GetAllannouncements gets all announcements
 func (s *AnnouncementService) GetAllAnnouncements(limit, offset int) ([]models.Announcement, int64, error) {
     return s.repository.GetAllAnnouncements(limit, offset)

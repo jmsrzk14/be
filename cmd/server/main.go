@@ -252,7 +252,7 @@ func main() {
 	}
 
 	// Start the server
-	port := utils.GetEnvWithDefault("SERVER_PORT", "8080")
+	port := utils.GetEnvWithDefault("SERVER_PORT", "9090")
 
 	// Add public endpoints
 	router.GET("/api/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)

@@ -13,6 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"github.com/microcosm-cc/bluemonday"
 )
 
 // NewsHandler menangani request HTTP terkait berita
@@ -83,29 +85,43 @@ func (h *NewsHandler) GetNewsByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Format ID tidak valid"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	news, err := h.service.GetNewsByID(uint(id))
+	stats := c.Query("stats")
+	var result interface{}
+
+	if stats == "true" {
+		result, err = h.service.GetNewsWithStats(uint(id))
+	} else {
+		result, err = h.service.GetNewsByID(uint(id))
+	}
+
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "News not found"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "Berita berhasil didapatkan",
-		"data":    news,
+		"message": "News retrieved successfully",
+		"data":    result,
 	})
 }
+
+// buat sanitizer sekali untuk dipakai ulang
+var htmlSanitizer = bluemonday.UGCPolicy()
 
 // CreateNews membuat berita baru (dengan unggahan file opsional)
 func (h *NewsHandler) CreateNews(c *gin.Context) {
 	var news models.News
 
 	news.Title = c.PostForm("title")
-	news.Content = c.PostForm("content")
+	// sanitize content agar aman menyimpan HTML rich-text
+	rawContent := c.PostForm("content")
+	news.Content = htmlSanitizer.Sanitize(rawContent)
+
 	news.Category = c.PostForm("category")
 	news.BEMID = parseOptionalUint(c.PostForm("bem_id"))
 	news.AssociationID = parseOptionalUint(c.PostForm("association_id"))
@@ -175,12 +191,26 @@ func (h *NewsHandler) UpdateNews(c *gin.Context) {
 		return
 	}
 
-	existingNews.Title = c.PostForm("title")
-	existingNews.Content = c.PostForm("content")
-	existingNews.Category = c.PostForm("category")
-	existingNews.BEMID = parseOptionalUint(c.PostForm("bem_id"))
-	existingNews.AssociationID = parseOptionalUint(c.PostForm("association_id"))
-	existingNews.DepartmentID = parseOptionalUint(c.PostForm("department_id"))
+	// hanya update content jika ada input baru; sanitize sebelum set
+	if content := c.PostForm("content"); content != "" {
+		existingNews.Content = htmlSanitizer.Sanitize(content)
+	}
+	// update other fields only if provided
+	if title := c.PostForm("title"); title != "" {
+		existingNews.Title = title
+	}
+	if category := c.PostForm("category"); category != "" {
+		existingNews.Category = category
+	}
+	if v := c.PostForm("bem_id"); v != "" {
+		existingNews.BEMID = parseOptionalUint(v)
+	}
+	if v := c.PostForm("association_id"); v != "" {
+		existingNews.AssociationID = parseOptionalUint(v)
+	}
+	if v := c.PostForm("department_id"); v != "" {
+		existingNews.DepartmentID = parseOptionalUint(v)
+	}
 
 	file, err := c.FormFile("image")
 	if err == nil {

@@ -27,6 +27,25 @@ func (s *NewsService) CreateNews(news *models.News) error {
 	}
 	return s.repository.Create(news)
 }
+type NewsWithStats struct {
+	News  models.News `json:"news"`
+	RoomCount int64           `json:"room_count"`
+}
+func (s *NewsService) GetNewsWithStats(id uint) (*NewsWithStats, error) {
+	// Get news
+	news, err := s.repository.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if news == nil {
+		return nil, errors.New("berita tidak ditemukan")
+	}
+
+	// Return news with stats
+	return &NewsWithStats{
+		News:  *news,
+	}, nil
+}
 
 // UpdateNews memperbarui berita yang ada.
 func (s *NewsService) UpdateNews(news *models.News) error {
