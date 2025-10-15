@@ -90,6 +90,7 @@ func (s *AnnouncementService) GetAllAnnouncements(limit, offset int) ([]models.A
     return s.repository.GetAllAnnouncements(limit, offset)
 }
 
+
 // Deleteannouncement deletes a announcement
 func (s *AnnouncementService) DeleteAnnouncement(id uint) error {
 	// Check if announcement exists

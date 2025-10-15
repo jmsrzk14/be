@@ -95,6 +95,7 @@ func main() {
 	router.GET("/api/bems/manage/:period", bemHandler.GetBEMByPeriod)
 	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 	router.GET("/api/news", newsHandler.GetAllNews)
+	router.GET("/api/announcements", announcementHandler.GetAllAnnouncement)
 	router.GET("/api/news/:id", newsHandler.GetNewsByID)
 	router.GET("/api/item_sarpras", itemHandler.GetAllItemsSarpras)
 	router.GET("/api/item_depol", itemHandler.GetAllItemsDepol)
@@ -151,7 +152,7 @@ func main() {
 			adminRoutes.PUT("/bems/:id", bemHandler.UpdateBem)
 			adminRoutes.DELETE("/bems/:id", bemHandler.DeleteBem)
 
-			adminRoutes.GET("/announcement", announcementHandler.GetAllAnnouncements)
+			adminRoutes.GET("/announcement", announcementHandler.GetAllAnnouncement)
 			adminRoutes.GET("/announcements/:id", announcementHandler.GetAnnouncementByID)
 			adminRoutes.POST("/announcements", announcementHandler.CreateAnnouncement)
 			adminRoutes.PUT("/announcements/:id", announcementHandler.UpdateAnnouncement)
@@ -189,7 +190,16 @@ func main() {
 			studentRoutes.PUT("/visimisibem/:id", visimisiHandler.UpdateVisiMisiBem)
 			studentRoutes.PUT("/visimisiperiod/:id", visimisiHandler.UpdateVisiMisiPeriod)
 			studentRoutes.POST("/announcements", announcementHandler.CreateAnnouncement)
-			studentRoutes.GET("/announcement", announcementHandler.GetAllAnnouncements)
+			studentRoutes.GET("/announcement", announcementHandler.GetAllAnnouncement)
+			studentRoutes.GET("/announcements/:id", announcementHandler.GetAnnouncementByID)
+			studentRoutes.PUT("/announcements/:id", announcementHandler.UpdateAnnouncement)
+
+			studentRoutes.GET("/news", newsHandler.GetAllNews)
+			studentRoutes.GET("/news/:id", newsHandler.GetNewsByID)
+			studentRoutes.POST("/news", newsHandler.CreateNews)
+			studentRoutes.PUT("/news/:id", newsHandler.UpdateNews)
+			studentRoutes.DELETE("/news/:id", newsHandler.DeleteNews)
+
 
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)

@@ -15,7 +15,6 @@ import (
 
 	"bem_be/internal/models"
 	"bem_be/internal/services"
-	"bem_be/internal/utils"
 )
 
 // AnnouncementHandler handles HTTP requests related to announcements
@@ -33,7 +32,7 @@ func NewAnnouncementHandler(db *gorm.DB) *AnnouncementHandler {
 }
 
 // GetAllAnnouncements returns all announcements
-func (h *AnnouncementHandler) GetAllAnnouncements(c *gin.Context) {
+func (h *AnnouncementHandler) GetAllAnnouncement(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
 
@@ -46,33 +45,28 @@ func (h *AnnouncementHandler) GetAllAnnouncements(c *gin.Context) {
 
 	offset := (page - 1) * perPage
 
-	announcements, total, err := h.service.GetAllAnnouncements(perPage, offset)
+	announcementList, total, err := h.service.GetAllAnnouncements(perPage, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
-
-	metadata := utils.PaginationMetadata{
-		CurrentPage: page,
-		PerPage:     perPage,
-		TotalItems:  int(total),
-		TotalPages:  totalPages,
-		Links: utils.PaginationLinks{
-			First: fmt.Sprintf("/announcements?page=1&per_page=%d", perPage),
-			Last:  fmt.Sprintf("/announcements?page=%d&per_page=%d", totalPages, perPage),
-		},
+	var totalPages int
+	if perPage > 0 {
+		totalPages = int(math.Ceil(float64(total) / float64(perPage)))
 	}
 
-	response := utils.MetadataFormatResponse(
-		"success",
-		"Berhasil mendapatkan daftar pengumuman",
-		metadata,
-		announcements,
-	)
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Berhasil mendapatkan daftar berita",
+		"metadata": gin.H{
+			"current_page": page,
+			"per_page":     perPage,
+			"total_items":  total,
+			"total_pages":  totalPages,
+		},
+		"data": announcementList,
+	})
 }
 
 // GetAnnouncementByID returns an announcement by ID
