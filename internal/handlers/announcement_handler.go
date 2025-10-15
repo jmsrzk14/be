@@ -106,32 +106,29 @@ func formatPosition(pos string) string {
 func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 	var announcement models.Announcement
 
-	// Ambil external user id dari JWT context
 	extUserID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
 
-	// Cari student berdasarkan external user id
-	var student models.Student
-	if err := h.db.Where("user_id = ?", extUserID).First(&student).Error; err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Student not found"})
-		return
+	var authorID uint = 0
+	var orgID *uint = nil
+
+	if exists {
+		var student models.Student
+		if err := h.db.Where("user_id = ?", extUserID).First(&student).Error; err == nil {
+			authorID = uint(student.UserID)
+			if student.OrganizationID != nil {
+				orgIDVal := uint(*student.OrganizationID)
+				orgID = &orgIDVal
+			}
+		}
 	}
 
 	// Isi field announcement
 	announcement.Title = c.PostForm("title")
 	announcement.Content = c.PostForm("content")
-	announcement.AuthorID = uint(student.UserID) // pakai user_id dari students
+	announcement.AuthorID = authorID
+	announcement.OrganizationID = orgID
 
-	if student.OrganizationID != nil {
-		orgID := uint(*student.OrganizationID)
-		announcement.OrganizationID = &orgID
-	}
-
-	// 🔥 Parsing start_date & end_date dari form-data
-	layout := "2006-01-02" // format tanggal yg dipakai di form (contoh: 2025-10-05)
+	layout := "2006-01-02"
 	if startDateStr := c.PostForm("start_date"); startDateStr != "" {
 		startDate, err := time.Parse(layout, startDateStr)
 		if err != nil {
@@ -150,11 +147,11 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 		announcement.EndDate = &endDate
 	}
 
-	// Handle file upload
 	file, err := c.FormFile("file")
 	if err == nil {
-		uploadPath := "uploads/announcements"
+		uploadPath := "uploads"
 		os.MkdirAll(uploadPath, os.ModePerm)
+
 		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
 		filePath := filepath.Join(uploadPath, fileName)
 
@@ -162,10 +159,10 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 			return
 		}
-		announcement.FileURL = filePath
+
+		announcement.FileURL = fileName
 	}
 
-	// Simpan ke DB
 	if err := h.service.Createannouncement(&announcement); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -173,7 +170,7 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",
-		"message": "Announcement created successfrange ully",
+		"message": "Announcement created successfully",
 		"data":    announcement,
 	})
 }

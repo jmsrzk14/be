@@ -11,9 +11,9 @@ type Announcement struct {
 	Title          string         `json:"title" gorm:"size:255;not null"`
 	Content        string         `json:"content" gorm:"type:text;not null"`
 	FileURL        string         `json:"file_url,omitempty" gorm:"type:varchar(255);column:file_url"`
-	OrganizationID *uint          `json:"organization_id,omitempty"` // nullable
+	OrganizationID *uint          `json:"organization_id,omitempty" gorm:"default:null"`
 	Organization   *Organization  `json:"organization,omitempty" gorm:"foreignKey:OrganizationID"`
-	AuthorID       uint           `json:"author_id" gorm:"not null"`
+	AuthorID       uint           `json:"author_id" gorm:"default:null"`
 	Author         *User          `json:"author,omitempty" gorm:"foreignKey:AuthorID"`
 	StartDate      *time.Time     `json:"start_date,omitempty"`
 	EndDate        *time.Time     `json:"end_date,omitempty"`

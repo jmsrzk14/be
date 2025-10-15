@@ -40,15 +40,15 @@ func (r *StudentRepository) FindAll(limit, offset int, search, studyProgram stri
 	if search != "" {
 		likeSearch := "%" + search + "%"
 		query = query.Where(
-			r.db.Where("full_name LIKE ?", likeSearch).
-				Or("study_program LIKE ?", likeSearch).
+			r.db.Where("LOWER(full_name) LIKE ?", likeSearch).
+				Or("LOWER(study_program) LIKE ?", likeSearch).
 				Or("CAST(year_enrolled AS CHAR) LIKE ?", likeSearch),
 		)
 	}
 
 	// filter by study program (pakai LIKE biar fleksibel)
 	if studyProgram != "" {
-		query = query.Where("study_program LIKE ?", "%"+studyProgram+"%")
+		query = query.Where("LOWER(study_program) LIKE ?", "%"+studyProgram+"%")
 	}
 
 	// filter by year enrolled

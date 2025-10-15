@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"math"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -27,42 +31,42 @@ func NewDepartmentHandler(db *gorm.DB) *DepartmentHandler {
 }
 
 func (h *DepartmentHandler) GetAllDepartments(c *gin.Context) {
-    page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-    perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
-    search := c.Query("name") // pencarian pakai param ?name=
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	search := c.Query("name") // pencarian pakai param ?name=
 
-    if page < 1 {
-        page = 1
-    }
-    if perPage < 1 {
-        perPage = 10
-    }
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 10
+	}
 
-    offset := (page - 1) * perPage
+	offset := (page - 1) * perPage
 
-    departments, total, err := h.service.GetAllDepartments(perPage, offset, search)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
-        return
-    }
+	departments, total, err := h.service.GetAllDepartments(perPage, offset, search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
+		return
+	}
 
-    totalPages := int(math.Ceil(float64(total) / float64(perPage)))
+	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 
-    metadata := utils.PaginationMetadata{
-        CurrentPage: page,
-        PerPage:     perPage,
-        TotalItems:  int(total),
-        TotalPages:  totalPages,
-    }
+	metadata := utils.PaginationMetadata{
+		CurrentPage: page,
+		PerPage:     perPage,
+		TotalItems:  int(total),
+		TotalPages:  totalPages,
+	}
 
-    response := utils.MetadataFormatResponse(
-        "success",
-        "Berhasil list mendapatkan data associations",
-        metadata,
-        departments,
-    )
+	response := utils.MetadataFormatResponse(
+		"success",
+		"Berhasil list mendapatkan data departments",
+		metadata,
+		departments,
+	)
 
-    c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *DepartmentHandler) GetAllDepartmentsGuest(c *gin.Context) {
@@ -120,7 +124,7 @@ func (h *DepartmentHandler) CreateDepartment(c *gin.Context) {
 	// ambil field manual (biar gak coba bind file ke string)
 	department.Name = c.PostForm("name")
 	department.ShortName = c.PostForm("short_name")
-	
+
 	department.CategoryID = 2
 
 	// ambil file
@@ -151,14 +155,48 @@ func (h *DepartmentHandler) UpdateDepartment(c *gin.Context) {
 		return
 	}
 
-	var department models.Organization
-	if err := c.ShouldBindJSON(&department); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	type UpdateInput struct {
+		Name      string `form:"name" binding:"omitempty"`
+		ShortName string `form:"short_name" binding:"omitempty"`
+	}
+	var input UpdateInput
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
 		return
 	}
 
+	var department models.Organization
 	department.ID = uint(id)
 
+	if input.Name != "" {
+		department.Name = input.Name
+	}
+	if input.ShortName != "" {
+		department.ShortName = input.ShortName
+	}
+
+	// Handle image upload if provided
+	file, err := c.FormFile("image")
+	if err == nil {
+		uploadPath := "uploads/departments"
+		if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+			return
+		}
+
+		// Generate unique filename
+		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		filePath := filepath.Join(uploadPath, fileName)
+
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
+
+		department.Image = fileName // This will be non-empty, so repo will update it
+	}
+
+	// Call service to update (repo will only update non-zero fields)
 	if err := h.service.UpdateDepartment(&department); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

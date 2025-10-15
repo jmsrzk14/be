@@ -31,6 +31,7 @@ func NewRequestHandler(db *gorm.DB) *RequestHandler {
 func (h *RequestHandler) GetAllRequestsSarpras(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	search := c.Query("name") 
 
 	if page < 1 {
 		page = 1
@@ -43,7 +44,7 @@ func (h *RequestHandler) GetAllRequestsSarpras(c *gin.Context) {
 
 	category := 2
 
-	requests, total, err := h.service.GetAllRequestsDepol(category, perPage, offset)
+	requests, total, err := h.service.GetAllRequestsSarpras(category, perPage, offset, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return
@@ -397,6 +398,7 @@ func (h *RequestHandler) EndRequestBarangSarpras(c *gin.Context) {
 func (h *RequestHandler) GetAllRequestsDepol(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	search := c.Query("name") 
 
 	if page < 1 {
 		page = 1
@@ -409,7 +411,7 @@ func (h *RequestHandler) GetAllRequestsDepol(c *gin.Context) {
 
 	category := 1
 
-	requests, total, err := h.service.GetAllRequestsDepol(category, perPage, offset)
+	requests, total, err := h.service.GetAllRequestsDepol(category, perPage, offset, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return

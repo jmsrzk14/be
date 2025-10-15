@@ -25,9 +25,11 @@ func (r *DepartmentRepository) Create(department *models.Organization) error {
 
 // Update updates an existing department
 func (r *DepartmentRepository) Update(department *models.Organization) error {
-	return r.db.Save(department).Error
+	return r.db.Model(&models.Organization{}).
+		Where("id = ?", department.ID).
+		Omit("created_at, category").
+		Updates(department).Error
 }
-
 // FindByID finds a department by ID
 func (r *DepartmentRepository) FindByID(id uint) (*models.Organization, error) {
 	var department models.Organization
@@ -51,7 +53,7 @@ func (r *DepartmentRepository) FindByName(code string) (*models.Organization, er
 	return &department, nil
 }
 
-// GetAllAssociations returns all associations from the database with optional search filter
+// GetAllDepartments returns all departments from the database with optional search filter
 func (r *DepartmentRepository) GetAllDepartments(limit, offset int, search string) ([]models.Organization, int64, error) {
     var departments []models.Organization
     var total int64
@@ -60,7 +62,7 @@ func (r *DepartmentRepository) GetAllDepartments(limit, offset int, search strin
 
     if search != "" {
         likeSearch := "%" + search + "%"
-        query = query.Where("name LIKE ?", likeSearch)
+        query = query.Where("LOWER(name) LIKE ?", likeSearch)
     }
 
     query.Count(&total)
@@ -134,7 +136,7 @@ func (r *DepartmentRepository) RestoreByName(code string) (*models.Organization,
 // } 
 
 func (r *DepartmentRepository) GetAllDepartmentsGuest() ([]models.Organization, error) {
-    var associations []models.Organization
-    err := r.db.Where("category_id = ?", 2).Find(&associations).Error
-    return associations, err
+    var departments []models.Organization
+    err := r.db.Where("category_id = ?", 2).Find(&departments).Error
+    return departments, err
 }

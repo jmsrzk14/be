@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"path/filepath"
 	"net/http"
 	"strconv"
+	"time"
 	"math"
+	"fmt"
+	"os"
 	"gorm.io/gorm"
 
 	"bem_be/internal/models"
@@ -153,14 +157,48 @@ func (h *ClubHandler) UpdateClub(c *gin.Context) {
 		return
 	}
 
-	var club models.Organization
-	if err := c.ShouldBindJSON(&club); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	type UpdateInput struct {
+		Name      string `form:"name" binding:"omitempty"`
+		ShortName string `form:"short_name" binding:"omitempty"`
+	}
+	var input UpdateInput
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
 		return
 	}
 
+	var club models.Organization
 	club.ID = uint(id)
 
+	if input.Name != "" {
+		club.Name = input.Name
+	}
+	if input.ShortName != "" {
+		club.ShortName = input.ShortName
+	}
+
+	// Handle image upload if provided
+	file, err := c.FormFile("image")
+	if err == nil {
+		uploadPath := "uploads/clubs"
+		if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+			return
+		}
+
+		// Generate unique filename
+		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		filePath := filepath.Join(uploadPath, fileName)
+
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
+
+		club.Image = fileName // This will be non-empty, so repo will update it
+	}
+
+	// Call service to update (repo will only update non-zero fields)
 	if err := h.service.UpdateClub(&club); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

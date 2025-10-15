@@ -4,6 +4,10 @@ import (
 	"net/http"
 	"strconv"
 	"math"
+	"os"
+	"time"
+	"path/filepath"
+	"fmt"
 	"gorm.io/gorm"
 
 	"bem_be/internal/models"
@@ -113,7 +117,6 @@ func (h *AssociationHandler) GetAssociationByID(c *gin.Context) {
 }
 
 // CreateAssociation creates a new association
-// CreateAssociation creates a new association
 func (h *AssociationHandler) CreateAssociation(c *gin.Context) {
 	var association models.Organization
 
@@ -153,14 +156,48 @@ func (h *AssociationHandler) UpdateAssociation(c *gin.Context) {
 		return
 	}
 
-	var association models.Organization
-	if err := c.ShouldBindJSON(&association); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	type UpdateInput struct {
+		Name      string `form:"name" binding:"omitempty"`
+		ShortName string `form:"short_name" binding:"omitempty"`
+	}
+	var input UpdateInput
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
 		return
 	}
 
+	var association models.Organization
 	association.ID = uint(id)
 
+	if input.Name != "" {
+		association.Name = input.Name
+	}
+	if input.ShortName != "" {
+		association.ShortName = input.ShortName
+	}
+
+	// Handle image upload if provided
+	file, err := c.FormFile("image")
+	if err == nil {
+		uploadPath := "uploads/associations"
+		if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+			return
+		}
+
+		// Generate unique filename
+		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		filePath := filepath.Join(uploadPath, fileName)
+
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
+
+		association.Image = fileName // This will be non-empty, so repo will update it
+	}
+
+	// Call service to update (repo will only update non-zero fields)
 	if err := h.service.UpdateAssociation(&association); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

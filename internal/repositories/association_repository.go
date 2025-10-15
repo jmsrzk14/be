@@ -25,7 +25,10 @@ func (r *AssociationRepository) Create(association *models.Organization) error {
 
 // Update updates an existing association
 func (r *AssociationRepository) Update(association *models.Organization) error {
-	return r.db.Save(association).Error
+	return r.db.Model(&models.Organization{}).
+		Where("id = ?", association.ID).
+		Omit("created_at, category").
+		Updates(association).Error
 }
 
 // FindByID finds a association by ID
@@ -60,7 +63,7 @@ func (r *AssociationRepository) GetAllAssociations(limit, offset int, search str
 
     if search != "" {
         likeSearch := "%" + search + "%"
-        query = query.Where("name LIKE ?", likeSearch)
+        query = query.Where("LOWER(name) LIKE ?", likeSearch)
     }
 
     query.Count(&total)

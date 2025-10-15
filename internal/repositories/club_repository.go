@@ -25,7 +25,10 @@ func (r *ClubRepository) Create(club *models.Organization) error {
 
 // Update updates an existing club
 func (r *ClubRepository) Update(club *models.Organization) error {
-	return r.db.Save(club).Error
+	return r.db.Model(&models.Organization{}).
+		Where("id = ?", club.ID).
+		Omit("created_at, category").
+		Updates(club).Error
 }
 
 // FindByID finds a club by ID
@@ -60,7 +63,7 @@ func (r *ClubRepository) GetAllClubs(limit, offset int, search string) ([]models
 
     if search != "" {
         likeSearch := "%" + search + "%"
-        query = query.Where("name LIKE ?", likeSearch)
+        query = query.Where("LOWER(name) LIKE ?", likeSearch)
     }
 
     query.Count(&total)
