@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
-	"bem_be/internal/auth"
+	"bem_be/internal/auth" // ✅ IMPORT AUTH PACKAGE
 	"bem_be/internal/models"
 	"bem_be/internal/repositories"
 
@@ -16,86 +14,64 @@ import (
 
 // CampusLogin handles login requests for campus users (all roles)
 func CampusLogin(c *gin.Context) {
-	var req models.CampusLoginRequest
+	var req models.CampusLoginRequestV2
 
-	// Bind form data
-	if err := c.ShouldBind(&req); err != nil {
-		log.Printf("Error binding request data: %v", err)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("Bind error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
+		return
+	}
+
+	log.Printf("Login attempt - Device: %s, Platform: %s, User: %s", req.SystemID, req.Platform, req.Username)
+
+	// Validasi
+	if req.SystemID == "" || req.Username == "" || req.Password == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request format",
+			"error": "system_id, username, password required",
 		})
 		return
 	}
 
-	log.Printf("Campus login attempt for username: %s", req.Username)
-
-	// Call campus login service
-	campusResponse, err := auth.CampusLogin(req.Username, req.Password)
+	campusResponse, err := auth.CampusLoginV2(req.SystemID, req.Platform, req.Info, req.Username, req.Password)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		message := "Authentication failed"
-
-		// Handle specific error types
+		status := http.StatusInternalServerError
+		msg := "Authentication failed"
 		if errors.Is(err, auth.ErrCampusAuthFailed) {
-			statusCode = http.StatusUnauthorized
-			message = "Campus authentication failed"
+			status = http.StatusUnauthorized
+			msg = "Invalid credentials"
 		}
-
-		log.Printf("Campus login failed: %v", err)
-
-		// Return a properly formatted error response
-		c.JSON(statusCode, gin.H{
-			"error": message,
-		})
+		log.Printf("Login failed: %v", err)
+		c.JSON(status, gin.H{"error": msg})
 		return
 	}
 
-	log.Printf("Campus login successful for user: %s with role: %s", campusResponse.User.Username, campusResponse.User.Role)
-
-	// Convert to standard login response
 	loginResponse := auth.ConvertCampusResponseToLoginResponse(campusResponse)
-	log.Printf("Converted to login response with user role: %s", loginResponse.User.Role)
-
-	// Debug logging to help diagnose token structure issues
-	log.Printf("Response token length: %d, refresh token length: %d",
-		len(loginResponse.Token), len(loginResponse.RefreshToken))
 
 	studentRepo := repositories.NewStudentRepository()
 	student, err := studentRepo.FindByExternalUserUsername(loginResponse.User.Username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch student"})
+		log.Printf("Student fetch error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch profile"})
 		return
 	}
 
-	fmt.Println("Student username:", student.UserName)
-	fmt.Println("External user username:", loginResponse.User.Username)
-
-	// Use custom response struct to ensure the correct field order
-	var orgID int
-if student.OrganizationID != nil {
-    orgID = *student.OrganizationID
-}
-
-orderedResponse := models.OrderedLoginResponse{
-    User:           loginResponse.User,
-    Token:          loginResponse.Token,
-    RefreshToken:   loginResponse.RefreshToken,
-    Position:       student.Position,
-    OrganizationID: orgID, // 0 kalau nil
-}
-
-
-	// Set content type
-	c.Header("Content-Type", "application/json")
-
-	// Manually marshal to JSON to ensure field order
-	jsonBytes, err := json.Marshal(orderedResponse)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating response"})
-		return
+	orgID := 0
+	if student.OrganizationID != nil {
+		orgID = *student.OrganizationID
 	}
 
-	// Write the response
-	c.Writer.WriteHeader(http.StatusOK)
-	c.Writer.Write(jsonBytes)
+	response := models.OrderedLoginResponse{
+		User:           loginResponse.User,
+		Token:          loginResponse.Token,
+		RefreshToken:   loginResponse.RefreshToken,
+		Position:       student.Position,
+		OrganizationID: orgID,
+		SystemID:       req.SystemID,
+		Platform:       req.Platform,
+	}
+
+	log.Printf("✅ Login SUCCESS - %s (Role: %s, Pos: %s)", 
+		req.Username, loginResponse.User.Role, student.Position)
+
+	c.JSON(http.StatusOK, response)
 }
