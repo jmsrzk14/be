@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -67,24 +68,91 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-
 func (h *AspirationHandler) CreateAspiration(c *gin.Context) {
 	var aspiration models.Aspiration
-	aspiration.Title = c.PostForm("title")
-	aspiration.Description = c.PostForm("description")
-	aspiration.Category = c.PostForm("category")
-	aspiration.PriorityLevel = c.PostForm("priority_level")
-	if aspiration.Title == "" || aspiration.Description == "" || aspiration.Category == "" || aspiration.PriorityLevel == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields (title, description, category, priority) are required"})
+
+	// ✅ Ambil userID dari context (harus sama key-nya dengan yang diset di middleware)
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "User belum login atau token tidak valid",
+		})
 		return
 	}
+
+	// ✅ Konversi userID ke int dengan aman
+	var userID int
+	switch v := userIDVal.(type) {
+	case float64:
+		userID = int(v)
+	case int:
+		userID = v
+	case uint:
+		userID = int(v)
+	default:
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": fmt.Sprintf("Tipe userID tidak dikenali: %T", userIDVal),
+		})
+		return
+	}
+
+	// ✅ Deteksi content-type dan lakukan binding sesuai jenisnya
+	contentType := c.GetHeader("Content-Type")
+	if strings.HasPrefix(contentType, "application/json") {
+		if err := c.ShouldBindJSON(&aspiration); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Invalid JSON body: " + err.Error(),
+			})
+			return
+		}
+	} else {
+		// fallback untuk form-data
+		aspiration.Title = c.PostForm("title")
+		aspiration.Description = c.PostForm("description")
+		aspiration.Category = c.PostForm("category")
+		aspiration.Content = c.PostForm("content")
+		aspiration.PriorityLevel = c.PostForm("priority_level")
+	}
+
+	// ✅ Trim spasi untuk memastikan data bersih
+	aspiration.Title = strings.TrimSpace(aspiration.Title)
+	aspiration.Description = strings.TrimSpace(aspiration.Description)
+	aspiration.Category = strings.TrimSpace(aspiration.Category)
+	aspiration.Content = strings.TrimSpace(aspiration.Content)
+	aspiration.PriorityLevel = strings.TrimSpace(aspiration.PriorityLevel)
+
+	// ✅ Set user_id
+	aspiration.UserID = userID
+
+	// ✅ Validasi input
+	if aspiration.Title == "" ||
+		aspiration.Description == "" ||
+		aspiration.Category == "" ||
+		aspiration.PriorityLevel == "" ||
+		aspiration.Content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Semua field (title, description, category, content, priority_level) wajib diisi",
+		})
+		return
+	}
+
+	// ✅ Simpan ke DB
 	if err := h.service.CreateAspiration(&aspiration); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
+
+	// ✅ Response sukses
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",
-		"message": "Aspirasi berhasil dikirim secara anonim",
+		"message": "Aspirasi berhasil dikirim",
 		"data":    aspiration,
 	})
 }

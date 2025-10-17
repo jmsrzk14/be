@@ -85,7 +85,7 @@ func main() {
 	visimisiHandler := handlers.NewVisiMisiHandler(database.DB)
 	requestHandler := handlers.NewRequestHandler(database.DB)
 	itemHandler := handlers.NewItemHandler(database.DB)
-	aspirationHandler := *handlers.NewAspirationHandler(database.DB)
+	aspirationHandler := handlers.NewAspirationHandler(database.DB) // <-- gunakan pointer, bukan dereference
 	eventHandler := handlers.NewEventHandler(database.DB)
 
 	// Guest Page
@@ -179,7 +179,6 @@ func main() {
 			adminRoutes.GET("/item", itemHandler.GetAllItemsSarpras)
 			adminRoutes.GET("/item/:id", itemHandler.GetItemSarparsByID)
 
-			adminRoutes.GET("/aspirations", aspirationHandler.GetAllAspirations)
 		}
 
 		// Student routes
@@ -199,7 +198,6 @@ func main() {
 			studentRoutes.POST("/news", newsHandler.CreateNews)
 			studentRoutes.PUT("/news/:id", newsHandler.UpdateNews)
 			studentRoutes.DELETE("/news/:id", newsHandler.DeleteNews)
-
 
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)
@@ -247,6 +245,8 @@ func main() {
 			studentRoutes.DELETE("/item_depol/:id", itemHandler.DeleteItemDepol)
 
 			studentRoutes.POST("/aspirations", aspirationHandler.CreateAspiration)
+			studentRoutes.GET("/aspirations", aspirationHandler.GetAllAspirations)
+
 
 			studentRoutes.POST("/events", eventHandler.CreateEvent)
 			studentRoutes.PUT("/events/:id", eventHandler.UpdateEvent)
