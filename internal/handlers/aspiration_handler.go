@@ -26,6 +26,18 @@ func NewAspirationHandler(db *gorm.DB) *AspirationHandler {
 		db:      db,
 	}
 }
+type AspirationResponse struct {
+	ID           uint   `json:"id"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	Category     string `json:"category"`
+	Content      string `json:"content"`
+	Priority     string `json:"priority_level"`
+	UserID       uint   `json:"user_id"`
+	StudentName  string `json:"student_name"`
+	CreatedAt    string `json:"created_at"`
+	
+}
 
 func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -46,8 +58,22 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 		return
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
+	var responseData []AspirationResponse
+	for _, a := range aspirations {
+		responseData = append(responseData, AspirationResponse{
+			ID:          a.ID,
+			Content:     a.Content,
+			Title:       a.Title,
+			Description: a.Description,
+			Category:    a.Category,
+			Priority:    a.PriorityLevel,
+			StudentName: a.Student.FullName,
+			CreatedAt: a.CreatedAt.Local().Format("2006-01-02 15:04:05"),
+			 // ambil nama mahasiswa
+		})
+	}
 
+	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 	metadata := utils.PaginationMetadata{
 		CurrentPage: page,
 		PerPage:     perPage,
@@ -61,9 +87,9 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 
 	response := utils.MetadataFormatResponse(
 		"success",
-		"Berhasil mendapatkan daftar pengumuman",
+		"Berhasil mendapatkan daftar aspirasi",
 		metadata,
-		aspirations,
+		responseData,
 	)
 
 	c.JSON(http.StatusOK, response)

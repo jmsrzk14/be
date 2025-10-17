@@ -17,6 +17,7 @@ type AspirationService struct {
 func NewAspirationService(db *gorm.DB) *AspirationService {
 	return &AspirationService{
 		repository: repositories.NewAspirationRepository(),
+		db:         db, // ✅ tambahkan ini biar Preload jalan
 	}
 }
 
@@ -36,11 +37,35 @@ func (s *AspirationService) UpdateAspiration(aspiration *models.Aspiration) erro
 }
 
 func (s *AspirationService) GetAspirationByID(id uint) (*models.Aspiration, error) {
-	return s.repository.FindByID(id)
+	var aspiration models.Aspiration
+	if err := s.db.Preload("Student").First(&aspiration, id).Error; err != nil {
+		return nil, err
+	}
+	return &aspiration, nil
 }
 
 func (s *AspirationService) GetAllAspirations(limit, offset int) ([]models.Aspiration, int64, error) {
-	return s.repository.GetAllAspirations(limit, offset)
+	var aspirations []models.Aspiration
+	var total int64
+
+	// ✅ Hitung total aspirasi
+	if err := s.db.Model(&models.Aspiration{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// ✅ Ambil aspirasi + preload student (join ke tabel students)
+	if err := s.db.Preload("Student").Limit(limit).Offset(offset).Find(&aspirations).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// ✅ Kalau ada aspirasi yang belum punya student, hindari null pointer
+	for i := range aspirations {
+		if aspirations[i].Student.FullName == "" {
+			aspirations[i].Student.FullName = "-"
+		}
+	}
+
+	return aspirations, total, nil
 }
 
 func (s *AspirationService) DeleteAspiration(id uint) error {
@@ -60,13 +85,11 @@ type AspirationWithStats struct {
 }
 
 func (s *AspirationService) GetAspirationWithStats(id uint) (*AspirationWithStats, error) {
-	aspiration, err := s.repository.FindByID(id)
+	aspiration, err := s.GetAspirationByID(id)
 	if err != nil {
 		return nil, err
 	}
-	if aspiration == nil {
-		return nil, errors.New("gambar tidak ditemukan")
-	}
+
 	return &AspirationWithStats{
 		Aspiration: *aspiration,
 	}, nil

@@ -18,9 +18,8 @@ type Aspiration struct {
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 
-	Student Student `json:"student" gorm:"foreignKey:UserID;references:UserID"` // relasi opsional
+	Student 	Student `json:"student" gorm:"foreignKey:UserID;references:UserID"`
 }
-
 func (Aspiration) TableName() string {
 	return "aspirations"
 }
