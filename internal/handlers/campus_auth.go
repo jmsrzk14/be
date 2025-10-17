@@ -2,76 +2,120 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
-	"bem_be/internal/auth" // ✅ IMPORT AUTH PACKAGE
+	"bem_be/internal/auth"
 	"bem_be/internal/models"
 	"bem_be/internal/repositories"
 
 	"github.com/gin-gonic/gin"
 )
 
-// CampusLogin handles login requests for campus users (all roles)
 func CampusLogin(c *gin.Context) {
-	var req models.CampusLoginRequestV2
+	var req models.CampusLoginRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("Bind error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
-		return
-	}
-
-	log.Printf("Login attempt - Device: %s, Platform: %s, User: %s", req.SystemID, req.Platform, req.Username)
-
-	// Validasi
-	if req.SystemID == "" || req.Username == "" || req.Password == "" {
+	// Bind form data
+	if err := c.ShouldBind(&req); err != nil {
+		log.Printf("Error binding request data: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "system_id, username, password required",
+			"error": "Invalid request format",
 		})
 		return
 	}
 
-	campusResponse, err := auth.CampusLoginV2(req.SystemID, req.Platform, req.Info, req.Username, req.Password)
+	log.Printf("Campus login attempt for username: %s", req.Username)
+
+	// Call campus login service
+	campusResponse, err := auth.CampusLogin(req.SystemID, req.Platform, req.Info, req.Username, req.Password)
 	if err != nil {
-		status := http.StatusInternalServerError
-		msg := "Authentication failed"
+		statusCode := http.StatusInternalServerError
+		message := "Authentication failed"
+
 		if errors.Is(err, auth.ErrCampusAuthFailed) {
-			status = http.StatusUnauthorized
-			msg = "Invalid credentials"
+			statusCode = http.StatusUnauthorized
+			message = "Campus authentication failed"
 		}
-		log.Printf("Login failed: %v", err)
-		c.JSON(status, gin.H{"error": msg})
+
+		log.Printf("Campus login failed: %v", err)
+		c.JSON(statusCode, gin.H{"error": message})
 		return
 	}
 
+	// Convert to standard login response
 	loginResponse := auth.ConvertCampusResponseToLoginResponse(campusResponse)
 
-	studentRepo := repositories.NewStudentRepository()
-	student, err := studentRepo.FindByExternalUserUsername(loginResponse.User.Username)
-	if err != nil {
-		log.Printf("Student fetch error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch profile"})
+	log.Printf("Login success for user: %s (role: %s)", loginResponse.User.Username, loginResponse.User.Role)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Login berhasil",
+		"data": gin.H{
+			"token": loginResponse.Token,
+		},
+	})
+}
+
+func TOTPSetup(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
 		return
 	}
 
-	orgID := 0
-	if student.OrganizationID != nil {
-		orgID = *student.OrganizationID
+	totpRepo := repositories.NewTOTPRepository()
+
+	totpSetupResp, err := totpRepo.GetOrVerifyTOTP(token[7:])
+	if err != nil {
+		log.Printf("Failed to setup TOTP: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("TOTP setup failed: %v", err),
+		})
+		return
 	}
 
-	response := models.OrderedLoginResponse{
-		User:           loginResponse.User,
-		Token:          loginResponse.Token,
-		RefreshToken:   loginResponse.RefreshToken,
-		Position:       student.Position,
-		OrganizationID: orgID,
-		SystemID:       req.SystemID,
-		Platform:       req.Platform,
+	log.Printf("TOTP setup response: %s - %s", totpSetupResp.Status, totpSetupResp.Message)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  totpSetupResp.Status,
+		"message": totpSetupResp.Message,
+		"data": gin.H{
+			"qrcode": totpSetupResp.Data.QRCode,
+			"secret": totpSetupResp.Data.Secret,
+		},
+	})
+}
+
+func TOTPVerify(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
+		return
 	}
 
-	log.Printf("✅ Login SUCCESS - %s (Role: %s, Pos: %s)", 
-		req.Username, loginResponse.User.Role, student.Position)
+	var req struct {
+		Code string `json:"code" binding:"required"`
+	}
 
-	c.JSON(http.StatusOK, response)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid TOTP code"})
+		return
+	}
+
+	totpRepo := repositories.NewTOTPRepository()
+	verifyResp, err := totpRepo.PostTOTPVerify(token[7:], req.Code)
+	if err != nil {
+		log.Printf("TOTP verify failed: %v", err)
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "fail",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  verifyResp.Status,
+		"message": verifyResp.Message,
+	})
 }

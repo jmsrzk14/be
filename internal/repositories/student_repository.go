@@ -1,7 +1,10 @@
 package repositories
 
 import (
+	"encoding/json"
+	"net/http"
 	"errors"
+	"fmt"
 	"log"
 
 	"bem_be/internal/database"
@@ -159,11 +162,45 @@ func (r *StudentRepository) UpsertMany(students []models.Student) error {
 	return tx.Commit().Error
 }
 
-func (r *StudentRepository) FindByExternalUserUsername(username string) (*models.Student, error) {
-	var student models.Student
-	if err := r.db.Where("user_name = ?", username).First(&student).Error; err != nil {
+func (r *StudentRepository) FindByCampusToken(token string) (*models.Student, error) {
+	req, err := http.NewRequest("GET", "https://service-users.del.ac.id/api/v1/auth/login/info", nil)
+	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get user info: %s", resp.Status)
+	}
+
+	var profile struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Data    struct {
+			Username string `json:"username"`
+			Name     string `json:"name"`
+			Email    string `json:"email"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&profile); err != nil {
+		return nil, err
+	}
+
+	// Setelah dapat username dari kampus, baru cari di database lokal
+	var student models.Student
+	if err := r.db.Where("user_name = ?", profile.Data.Username).First(&student).Error; err != nil {
+		return nil, err
+	}
+
 	return &student, nil
 }
 

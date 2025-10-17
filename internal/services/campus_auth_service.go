@@ -328,16 +328,10 @@ func (s *CampusAuthService) sendAuthRequest(url string, body io.Reader, contentT
 		return "", fmt.Errorf("error parsing response (JSON Unmarshal error): %w, raw response: %s", err, string(bodyBytes))
 	}
 
-	// Check if result is successful
-	if !authResp.Result {
-		log.Printf("Authentication failed: %s", authResp.Error)
-		return "", fmt.Errorf("authentication failed: %s", authResp.Error)
-	}
-
 	log.Printf("Authentication successful, token received")
 
 	// Save token and set expiry
-	s.token = authResp.Token
+	s.token = authResp.Data.Token
 	s.tokenExpiry = time.Now().Add(tokenExpirationTime)
 
 	return s.token, nil

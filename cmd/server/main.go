@@ -70,6 +70,8 @@ func main() {
 
 	// Login for Student or All Role from External API
 	router.POST("/api/auth/campus/login", handlers.CampusLogin)
+	router.POST("/api/auth/totp/setup", handlers.TOTPSetup)
+	router.POST("/api/auth/totp/verify", handlers.TOTPVerify)
 
 	// Create handlers
 	campusAuthHandler := handlers.NewCampusAuthHandler()
@@ -263,7 +265,7 @@ func main() {
 	}
 
 	// Start the server
-	port := utils.GetEnvWithDefault("SERVER_PORT", "9090")
+	port := utils.GetEnvWithDefault("SERVER_PORT", "8080")
 
 	// Add public endpoints
 	router.GET("/api/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)

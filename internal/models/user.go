@@ -20,27 +20,6 @@ type User struct {
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"` // Soft delete support
 }
 
-type Device_Logs struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	SystemID  string    `json:"system_id" gorm:"not null"`
-	Platform  string    `json:"platform" gorm:"not null"`
-	Info      string    `json:"info" gorm:"not null"`
-	Username  string    `json:"username" gorm:"unique;not null;size:50"`
-	LoginAt   time.Time `json:"login_at"`
-	IPAddress string    `json:"ip_address"`
-	UserAgent string    `json:"user_agent"`
-}
-
-type Campus_Devices struct {
-	ID         uint      `json:"id" gorm:"primaryKey"`
-	SystemID   string    `json:"system_id" gorm:"not null"`
-	Platform   string    `json:"platform" gorm:"not null"`
-	DeviceInfo string    `json:"device_info" gorm:"not null"`
-	UserID     string    `json:"user)id" gorm:"unique;not null;size:50"`
-	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
-	LastLogin time.Time `json:"last_login" gorm:"autoUpdateTime"`
-}
-
 // TableName returns the table name for the User model
 func (User) TableName() string {
 	return "users"
@@ -91,13 +70,18 @@ type LoginResponse struct {
 }
 
 // OrderedLoginResponse represents a login response with controlled field order
-type OrderedLoginResponse1 struct {
-	User           User   `json:"user"`
-	Token          string `json:"token"`
-	RefreshToken   string `json:"refresh_token"`
-	Position       string `json:"position"`
-	OrganizationID int    `json:"organization_id"`
-	PeriodID       int    `json:"period_id"`
+type OrderedLoginResponse struct {
+	User           User     `json:"user"`
+	Token          string   `json:"token"`
+	RefreshToken   string   `json:"refresh_token"`
+	Position       string   `json:"position,omitempty"`
+	OrganizationID int      `json:"organization_id,omitempty"`
+	TOTP           TOTPData `json:"totp"`
+}
+
+type OrderedLoginResponseV2 struct {
+	Token          string   `json:"token"`
+	TOTP           TOTPData `json:"totp"`
 }
 
 // RefreshRequest represents the refresh token request body
