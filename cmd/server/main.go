@@ -214,7 +214,7 @@ func main() {
 			studentRoutes.GET("/request_sarpras/user/:username", requestHandler.GetRequestsByUserIDSapras)
 			studentRoutes.PUT("/request_sarpras/:id", requestHandler.UpdateRequestSarpras)
 			studentRoutes.PUT("/request_sarpras/image_barang/:id", requestHandler.UploadImageBarangSarpras)
-			studentRoutes.PUT("/request_sarpras/status/:id", requestHandler.UpdateRequestSarprasStatus)
+			studentRoutes.PUT("/request_sarpras/status/:username", requestHandler.UpdateRequestSarprasStatus)
 			studentRoutes.PUT("/request_sarpras/return/:id", requestHandler.ReturnBarangSarpras)
 			studentRoutes.PUT("/request_sarpras/done/:id", requestHandler.EndRequestBarangSarpras)
 			studentRoutes.DELETE("/request_sarpras/:id", requestHandler.DeleteRequestSarpras)
