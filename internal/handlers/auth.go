@@ -122,44 +122,35 @@ func RefreshToken(c *gin.Context) {
 
 // GetCurrentUser returns the currently logged-in user
 func GetCurrentUser(c *gin.Context) {
-	// Get the user ID from the context
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found in token"})
+	var request struct {
+		Username string `json:"username"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON request"})
 		return
 	}
 
-	// Convert userID ke uint biar bisa query DB
-	var userIDValue uint
-	switch v := userID.(type) {
-	case float64:
-		userIDValue = uint(v)
-	case int:
-		userIDValue = uint(v)
-	case uint:
-		userIDValue = v
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid userID type"})
+	if request.Username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username is required"})
 		return
 	}
 
-	// Query ke model Student
+	// 🔹 Query student berdasarkan username
 	var student models.Student
-	if err := database.DB.Where("user_id = ?", userIDValue).First(&student).Error; err != nil {
+	if err := database.DB.Where("user_name = ?", request.Username).First(&student).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 
+	// 🔹 Ambil data organisasi jika ada
 	var organization models.Organization
-	if student.OrganizationID != nil && *student.OrganizationID != 0 { // pastikan organizationId ada
+	if student.OrganizationID != nil && *student.OrganizationID != 0 {
 		if err := database.DB.Where("id = ?", student.OrganizationID).First(&organization).Error; err != nil {
 			organization = models.Organization{}
 		}
 	}
 
-	// Return data student + role
-	role, _ := c.Get("role")
-
+	// 🔹 Kirim response JSON
 	c.JSON(http.StatusOK, gin.H{
 		"id":            student.ID,
 		"name":          student.FullName,
@@ -168,7 +159,6 @@ func GetCurrentUser(c *gin.Context) {
 		"nim":           student.NIM,
 		"study_program": student.StudyProgram,
 		"image":         student.Image,
-		"role":          role,
 		"linkedin":      student.LinkedIn,
 		"instagram":     student.Instagram,
 		"whatsapp":      student.WhatsApp,
@@ -184,40 +174,38 @@ func GetCurrentUser(c *gin.Context) {
 }
 
 func EditProfile(c *gin.Context) {
-	// Ambil userID dari token
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found in token"})
+	// Ambil username dari JSON body
+	var request struct {
+		Username  string `json:"username"`
+		LinkedIn  string `form:"linkedin"`
+		Instagram string `form:"instagram"`
+		WhatsApp  string `form:"whatsapp"`
+	}
+
+	// Validasi input JSON
+	if err := c.ShouldBind(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	var userIDValue uint
-	switch v := userID.(type) {
-	case float64:
-		userIDValue = uint(v)
-	case int:
-		userIDValue = uint(v)
-	case uint:
-		userIDValue = v
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid userID type"})
+	if request.Username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username is required"})
 		return
 	}
 
-	// Ambil field text dari form-data
-	linkedin := c.PostForm("linkedin")
-	instagram := c.PostForm("instagram")
-	whatsapp := c.PostForm("whatsapp")
+	// Cari student berdasarkan username
+	var student models.Student
+	if err := database.DB.Where("user_name = ?", request.Username).First(&student).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
+		return
+	}
 
-	// Ambil file dari form-data
+	// Ambil file dari form-data (opsional)
 	file, err := c.FormFile("image")
 	var imageName string
 
 	if err == nil {
-		// Nama file untuk disimpan di DB
-		imageName = fmt.Sprintf("%d_%s", userIDValue, file.Filename)
-
-		// Path lengkap untuk simpan di folder
+		imageName = fmt.Sprintf("%d_%s", student.ID, file.Filename)
 		savePath := fmt.Sprintf("uploads/user/%s", imageName)
 
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
@@ -226,36 +214,29 @@ func EditProfile(c *gin.Context) {
 		}
 	}
 
-	// Cari student
-	var student models.Student
-	if err := database.DB.Where("user_id = ?", userIDValue).First(&student).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
-		return
-	}
-
-	// Update data
+	// Update data student
 	if imageName != "" {
-		student.Image = imageName // simpan hanya nama file
+		student.Image = imageName
 	}
-	student.LinkedIn = linkedin
-	student.Instagram = instagram
-	student.WhatsApp = whatsapp
+	student.LinkedIn = request.LinkedIn
+	student.Instagram = request.Instagram
+	student.WhatsApp = request.WhatsApp
 
 	if err := database.DB.Save(&student).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 		return
 	}
 
-	// Biar frontend gampang akses gambar, balikin URL lengkap
+	// Buat URL lengkap untuk gambar (biar frontend bisa akses)
 	imageURL := ""
 	if student.Image != "" {
-		imageURL = fmt.Sprintf("http://localhost:9090/uploads/user/%s", student.Image)
+		imageURL = fmt.Sprintf("http://localhost:8080/uploads/user/%s", student.Image)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":   "Profile updated successfully",
-		"image":     student.Image, // nama file saja
-		"image_url": imageURL,      // URL lengkap untuk akses
+		"image":     student.Image,
+		"image_url": imageURL,
 		"linkedin":  student.LinkedIn,
 		"instagram": student.Instagram,
 		"whatsapp":  student.WhatsApp,

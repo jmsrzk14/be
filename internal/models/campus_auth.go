@@ -59,9 +59,15 @@ type CampusLoginRequest struct {
 // CampusLoginResponse represents the response from the campus login API
 type CampusLoginResponse struct {
 	Status  string `json:"status"`
+	Token   string `json:"token"`
 	Message string `json:"message"`
 	Data    struct {
-		Token string `json:"token"`
+		Token    string `json:"token"`
+		Username string `json:"username"`
+		UserID   string `json:"user_id"`
+		Role     string `json:"role"`
+		Email    string `json:"email"`
+		Status   int    `json:"status"`
 	} `json:"data"`
 }
 

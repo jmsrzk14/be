@@ -64,6 +64,10 @@ func CampusLogin(system_id, platform, info, username, password string) (*models.
 		return nil, err
 	}
 
+	loginResponse.Data.Username = username
+	loginResponse.Data.Role = "Mahasiswa"
+
+	// Simpan ke database
 	if err := SaveCampusUserToDatabase(&loginResponse, password); err != nil {
 		log.Printf("Error saving user to database: %v", err)
 		return nil, err
@@ -72,15 +76,41 @@ func CampusLogin(system_id, platform, info, username, password string) (*models.
 	return &loginResponse, nil
 }
 
+
+// SaveCampusUserToDatabase creates or updates a user record for a campus user
 // SaveCampusUserToDatabase creates or updates a user record for a campus user
 func SaveCampusUserToDatabase(campusResponse *models.CampusLoginResponse, password string) error {
-	// Initialize user repository if needed
 	if UserRepository == nil {
 		log.Printf("Initializing UserRepository")
 		UserRepository = repositories.NewUserRepository()
 	}
 
-	log.Printf("User created successfully")
+	user := &models.User{
+		Username: campusResponse.Data.Username,
+		Password: password, // bisa di-hash kalau mau aman
+		Role:     campusResponse.Data.Role,
+	}
+
+	// Coba cek apakah user sudah ada di database
+	existingUser, err := UserRepository.FindByUsername(user.Username)
+	if err != nil {
+		log.Printf("Error checking user existence: %v", err)
+		return err
+	}
+
+	if existingUser != nil {
+		log.Printf("User already exist: %s", user.Username)
+	} else {
+		// Jika belum ada, insert user baru
+		log.Printf("Creating new user: %s", user.Username)
+		err = UserRepository.CreateUser(user)
+		if err != nil {
+			log.Printf("Error creating user: %v", err)
+			return err
+		}
+	}
+
+	log.Printf("User saved successfully: %s", user.Username)
 	return nil
 }
 

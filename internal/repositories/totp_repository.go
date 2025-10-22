@@ -11,7 +11,7 @@ import (
 
 const (
 	totpSetupURL  = "https://service-users.del.ac.id/api/v1/auth/totp/setup"
-	totpVerifyURL = " "
+	totpVerifyURL = "https://service-users.del.ac.id/api/v1/auth/totp/verify"
 )
 
 // Struct untuk response setup

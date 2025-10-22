@@ -21,6 +21,10 @@ func NewUserRepository() *UserRepository {
 	}
 }
 
+func (r *UserRepository) CreateUser(user *models.User) error {
+	return r.DB.Create(user).Error
+}
+
 // FindByUsername finds a user by username
 func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
 	var user models.User

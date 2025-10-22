@@ -88,34 +88,50 @@ func TOTPSetup(c *gin.Context) {
 }
 
 func TOTPVerify(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	if token == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
-		return
-	}
+    token := c.GetHeader("Authorization")
+    if token == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
+        return
+    }
 
-	var req struct {
-		Code string `json:"code" binding:"required"`
-	}
+    // Request body berisi code & username
+    var req struct {
+        Code     string `json:"code" binding:"required"`
+        Username string `json:"username" binding:"required"`
+    }
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid TOTP code"})
-		return
-	}
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid TOTP code or username"})
+        return
+    }
 
-	totpRepo := repositories.NewTOTPRepository()
-	verifyResp, err := totpRepo.PostTOTPVerify(token[7:], req.Code)
-	if err != nil {
-		log.Printf("TOTP verify failed: %v", err)
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "fail",
-			"message": err.Error(),
-		})
-		return
-	}
+    // 🔹 Cek data student berdasarkan username
+    totpRepo := repositories.NewTOTPRepository()
+	studentRepo := repositories.NewStudentRepository()
+    student, err := studentRepo.FindByUsername(req.Username)
+    if err != nil {
+        log.Printf("Student not found for username: %s", req.Username)
+        c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  verifyResp.Status,
-		"message": verifyResp.Message,
-	})
+    // 🔹 Verifikasi kode TOTP
+    verifyResp, err := totpRepo.PostTOTPVerify(token[7:], req.Code)
+    if err != nil {
+        log.Printf("TOTP verify failed for %s: %v", req.Username, err)
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "status":  "fail",
+            "message": err.Error(),
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  verifyResp.Status,
+        "message": verifyResp.Message,
+        "data": gin.H{
+            "username": req.Username,
+            "student":  student,
+        },
+    })
 }

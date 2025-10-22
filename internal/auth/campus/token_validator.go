@@ -71,12 +71,12 @@ func ValidateCampusToken(token string) (*CampusTokenClaims, error) {
 
 		// If we found a UID but no username/role, we need to query our database
 		// to get the correct role instead of defaulting to "Dosen"
-		role := fetchUserRoleFromDatabase(userID)
+		// role := fetchUserRoleFromDatabase(userID)
 
 		return &CampusTokenClaims{
 			UserID:   userID,
 			Username: uidClaims.Username,
-			Role:     role,
+			// Role:     role,
 		}, nil
 	}
 

@@ -11,10 +11,8 @@ type User struct {
 	ID             uint           `json:"id" gorm:"primaryKey"`
 	Username       string         `json:"username" gorm:"unique;not null;size:50"`
 	Role           string         `json:"role" gorm:"not null;size:20"`
-	Password       string         `json:"-" gorm:"not null;size:255"` // Password is not returned in JSON
-	Position       string         `json:"position" gorm:"not null;size:50"`
-	ExternalUserID *int           `json:"external_user_id" gorm:"uniqueIndex;comment:External user ID from campus system"` // External ID from campus system
-	Status         int            `json:"status" gorm:"type:int"`
+	Password       string         `json:"-" gorm:"not null;size:255"`                                                      // Password is not returned in JSON
+	ExternalUserID *int           `json:"external_user_id" gorm:"uniqueIndex;comment:External user ID from campus system;default:null"` // External ID from campus system
 	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"` // Soft delete support
@@ -80,8 +78,8 @@ type OrderedLoginResponse struct {
 }
 
 type OrderedLoginResponseV2 struct {
-	Token          string   `json:"token"`
-	TOTP           TOTPData `json:"totp"`
+	Token string   `json:"token"`
+	TOTP  TOTPData `json:"totp"`
 }
 
 // RefreshRequest represents the refresh token request body

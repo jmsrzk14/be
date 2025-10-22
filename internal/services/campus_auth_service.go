@@ -331,7 +331,7 @@ func (s *CampusAuthService) sendAuthRequest(url string, body io.Reader, contentT
 	log.Printf("Authentication successful, token received")
 
 	// Save token and set expiry
-	s.token = authResp.Data.Token
+	s.token = authResp.Token
 	s.tokenExpiry = time.Now().Add(tokenExpirationTime)
 
 	return s.token, nil

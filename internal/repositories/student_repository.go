@@ -215,3 +215,12 @@ func (r *StudentRepository) UpdateBem(bem *models.BEM) error {
 func (r *StudentRepository) SavePeriod(period *models.Period) error {
 	return r.db.Create(period).Error
 }
+
+func (r *StudentRepository) FindByUsername(username string) (*models.Student, error) {
+	var student models.Student
+	result := r.db.Where("user_name = ?", username).First(&student)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &student, nil
+}

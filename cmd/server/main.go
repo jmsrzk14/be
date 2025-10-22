@@ -5,10 +5,8 @@ import (
 	"os"
 
 	"bem_be/internal/auth"
-	"bem_be/internal/auth/campus"
 	"bem_be/internal/database"
 	"bem_be/internal/handlers"
-	"bem_be/internal/middleware"
 	"bem_be/internal/services"
 	"bem_be/internal/utils"
 
@@ -106,14 +104,12 @@ func main() {
 
 	// Protected routes
 	authRequired := router.Group("/api")
-	authRequired.Use(campus.CampusAuthMiddleware())
 	{
 		// Current user
 		authRequired.GET("/auth/me", handlers.GetCurrentUser)
 
 		// Admin routes
 		adminRoutes := authRequired.Group("/admin")
-		adminRoutes.Use(middleware.RoleMiddleware("Admin"))
 		{
 			// Campus API token management (admin only)
 			adminRoutes.GET("/campus/token", campusAuthHandler.GetToken)
@@ -186,7 +182,6 @@ func main() {
 
 		// Student routes
 		studentRoutes := authRequired.Group("/student")
-		studentRoutes.Use(middleware.RoleMiddleware("Mahasiswa"))
 		{
 			studentRoutes.GET("/visimisibem/:id", visimisiHandler.GetVisiMisiById)
 			studentRoutes.PUT("/visimisibem/:id", visimisiHandler.UpdateVisiMisiBem)
@@ -210,7 +205,7 @@ func main() {
 
 			studentRoutes.GET("/associations", associationHandler.GetAllAssociations)
 			studentRoutes.GET("/associations/:id", associationHandler.GetAssociationByID)
-			studentRoutes.GET("/profile", handlers.GetCurrentUser)
+			studentRoutes.POST("/profile", handlers.GetCurrentUser)
 			studentRoutes.PUT("/profile", handlers.EditProfile)
 
 			studentRoutes.POST("/requests_sarpras", requestHandler.CreateRequestSarpras)
@@ -250,17 +245,10 @@ func main() {
 			studentRoutes.POST("/aspirations", aspirationHandler.CreateAspiration)
 			studentRoutes.GET("/aspirations", aspirationHandler.GetAllAspirations)
 
-
 			studentRoutes.POST("/events", eventHandler.CreateEvent)
 			studentRoutes.PUT("/events/:id", eventHandler.UpdateEvent)
 			studentRoutes.GET("/events/current-month", eventHandler.GetEventsCurrentMonth)
 			studentRoutes.DELETE("/events/:id", eventHandler.DeleteEvent)
-		}
-
-		// Assistant routes
-		assistantRoutes := authRequired.Group("/assistant")
-		assistantRoutes.Use(middleware.RoleMiddleware("Asisten Dosen", "asisten dosen"))
-		{
 		}
 	}
 
