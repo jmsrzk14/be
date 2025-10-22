@@ -114,14 +114,9 @@ func (h *StudentHandler) GetStudentByID(c *gin.Context) {
 
 // GetStudentByUserID returns a student by their user ID from the campus system
 func (h *StudentHandler) GetStudentByUserID(c *gin.Context) {
-	userIDStr := c.Param("user_id")
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
-		return
-	}
+	username := c.Param("username")
 
-	student, err := h.service.GetStudentByUserID(userID)
+	student, err := h.service.GetStudentByUserID(username)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return

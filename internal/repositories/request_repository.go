@@ -38,7 +38,7 @@ func (r *RequestRepository) FindByIDSarpras(id uint) (*models.Request, error) {
 	return &request, nil
 }
 
-func (r *RequestRepository) FindAllByRequesterIDSarpras(requesterID uint) ([]models.Request, error) {
+func (r *RequestRepository) FindAllByRequesterIDSarpras(requesterID string) ([]models.Request, error) {
 	var requests []models.Request
 	if err := r.db.Where("requester_id = ? AND category = 2", requesterID).Find(&requests).Error; err != nil {
 		return nil, err
@@ -153,9 +153,9 @@ func (r *RequestRepository) FindByIDDepol(id uint) (*models.Request, error) {
 	return &request, nil
 }
 
-func (r *RequestRepository) FindAllByRequesterIDDepol(requesterID uint) ([]models.Request, error) {
+func (r *RequestRepository) FindAllByRequesterIDDepol(username string) ([]models.Request, error) {
 	var requests []models.Request
-	if err := r.db.Where("requester_id = ? AND category = 1", requesterID).Find(&requests).Error; err != nil {
+	if err := r.db.Where("requester_id = ? AND category = 1", username).Find(&requests).Error; err != nil {
 		return nil, err
 	}
 	return requests, nil

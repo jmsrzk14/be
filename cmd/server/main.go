@@ -120,7 +120,7 @@ func main() {
 			// Admin access to student data
 			adminRoutes.GET("/students", studentHandler.GetAllStudents)
 			adminRoutes.GET("/students/:id", studentHandler.GetStudentByID)
-			adminRoutes.GET("/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)
+			// adminRoutes.GET("/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)
 			adminRoutes.POST("/students/sync", studentHandler.SyncStudents)
 			adminRoutes.PUT("/students/:id/assign", studentHandler.AssignStudent)
 
@@ -211,7 +211,7 @@ func main() {
 			studentRoutes.POST("/requests_sarpras", requestHandler.CreateRequestSarpras)
 			studentRoutes.GET("/request_sarpras", requestHandler.GetAllRequestsSarpras)
 			studentRoutes.GET("/request_sarpras/:id", requestHandler.GetRequestByIDSarpras)
-			studentRoutes.GET("/request_sarpras/user/:id", requestHandler.GetRequestsByUserIDSapras)
+			studentRoutes.GET("/request_sarpras/user/:username", requestHandler.GetRequestsByUserIDSapras)
 			studentRoutes.PUT("/request_sarpras/:id", requestHandler.UpdateRequestSarpras)
 			studentRoutes.PUT("/request_sarpras/image_barang/:id", requestHandler.UploadImageBarangSarpras)
 			studentRoutes.PUT("/request_sarpras/status/:id", requestHandler.UpdateRequestSarprasStatus)
@@ -222,7 +222,7 @@ func main() {
 			studentRoutes.POST("/requests_depol", requestHandler.CreateRequestDepol)
 			studentRoutes.GET("/request_depol", requestHandler.GetAllRequestsDepol)
 			studentRoutes.GET("/request_depol/:id", requestHandler.GetRequestByIDDepol)
-			studentRoutes.GET("/request_depol/user/:id", requestHandler.GetRequestsByUserIDDepol)
+			studentRoutes.GET("/request_depol/user/:username", requestHandler.GetRequestsByUserIDDepol)
 			studentRoutes.PUT("/request_depol/:id", requestHandler.UpdateRequestDepol)
 			studentRoutes.PUT("/request_depol/image_barang/:id", requestHandler.UploadImageBarangDepol)
 			studentRoutes.PUT("/request_depol/status/:id", requestHandler.UpdateRequestDepolStatus)

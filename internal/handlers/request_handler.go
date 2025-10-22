@@ -31,7 +31,7 @@ func NewRequestHandler(db *gorm.DB) *RequestHandler {
 func (h *RequestHandler) GetAllRequestsSarpras(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
-	search := c.Query("name") 
+	search := c.Query("name")
 
 	if page < 1 {
 		page = 1
@@ -95,14 +95,9 @@ func (h *RequestHandler) GetRequestByIDSarpras(c *gin.Context) {
 }
 
 func (h *RequestHandler) GetRequestsByUserIDSapras(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid user ID format", nil))
-		return
-	}
+	username := c.Param("username")
 
-	requests, err := h.service.GetRequestsByRequesterIDSarpras(uint(id))
+	requests, err := h.service.GetRequestsByRequesterIDSarpras(username)
 	if err != nil {
 		c.JSON(http.StatusNotFound, utils.ResponseHandler("error", err.Error(), nil))
 		return
@@ -112,24 +107,7 @@ func (h *RequestHandler) GetRequestsByUserIDSapras(c *gin.Context) {
 }
 
 func (h *RequestHandler) CreateRequestSarpras(c *gin.Context) {
-	userIDStr := c.PostForm("userID")
-	if userIDStr == "" {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "userID is required", nil))
-		return
-	}
-
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid userID format", nil))
-		return
-	}
-
-	studentPtr, err := h.service.GetStudentByUserIDSarpras(userID)
-	if err != nil {
-		c.JSON(http.StatusForbidden, utils.ResponseHandler("error", "Student associated with this token not found", nil))
-		return
-	}
-	student := *studentPtr
+	username := c.PostForm("username")
 
 	uploadDir := filepath.Join("uploads", "requests")
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
@@ -138,7 +116,7 @@ func (h *RequestHandler) CreateRequestSarpras(c *gin.Context) {
 	}
 
 	var request models.Request
-	request.RequesterID = uint(student.UserID)
+	request.RequesterID = username
 	request.RequestPlan = c.PostForm("startDate")
 	request.ReturnPlan = c.PostForm("endDate")
 	request.Activity = c.PostForm("tujuan")
@@ -266,9 +244,10 @@ func (h *RequestHandler) UpdateRequestSarprasStatus(c *gin.Context) {
 
 	// 2. Ambil data dari body JSON
 	var input struct {
-		Status string `json:"status" binding:"required"`
-		UserID uint   `json:"user_id" binding:"required"`
-		Reason string `json:"reason"` // optional, hanya dipakai saat rejected
+		Status   string `json:"status" binding:"required"`
+		UserID   uint   `json:"user_id" binding:""`
+		Username string `json:"username" binding:""`
+		Reason   string `json:"reason"` // optional, hanya dipakai saat rejected
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid input: 'status' and 'user_id' are required", err.Error()))
@@ -288,7 +267,7 @@ func (h *RequestHandler) UpdateRequestSarprasStatus(c *gin.Context) {
 	}
 
 	// 5. Kirim ke service untuk diproses
-	updatedRequest, err := h.service.ProcessRequestStatusSarpras(uint(requestID), input.Status, int(input.UserID), input.Reason)
+	updatedRequest, err := h.service.ProcessRequestStatusSarpras(uint(requestID), input.Status, input.Username, input.Reason)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return
@@ -398,7 +377,7 @@ func (h *RequestHandler) EndRequestBarangSarpras(c *gin.Context) {
 func (h *RequestHandler) GetAllRequestsDepol(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
-	search := c.Query("name") 
+	search := c.Query("name")
 
 	if page < 1 {
 		page = 1
@@ -462,14 +441,9 @@ func (h *RequestHandler) GetRequestByIDDepol(c *gin.Context) {
 }
 
 func (h *RequestHandler) GetRequestsByUserIDDepol(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid user ID format", nil))
-		return
-	}
+	username := c.Param("username")
 
-	requests, err := h.service.GetRequestsByRequesterIDDepol(uint(id))
+	requests, err := h.service.GetRequestsByRequesterIDDepol(username)
 	if err != nil {
 		c.JSON(http.StatusNotFound, utils.ResponseHandler("error", err.Error(), nil))
 		return
@@ -479,24 +453,7 @@ func (h *RequestHandler) GetRequestsByUserIDDepol(c *gin.Context) {
 }
 
 func (h *RequestHandler) CreateRequestDepol(c *gin.Context) {
-	userIDStr := c.PostForm("userID")
-	if userIDStr == "" {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "userID is required", nil))
-		return
-	}
-
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid userID format", nil))
-		return
-	}
-
-	studentPtr, err := h.service.GetStudentByUserIDDepol(userID)
-	if err != nil {
-		c.JSON(http.StatusForbidden, utils.ResponseHandler("error", "Student associated with this token not found", nil))
-		return
-	}
-	student := *studentPtr
+	username := c.PostForm("username")
 
 	uploadDir := filepath.Join("uploads", "requests")
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
@@ -505,7 +462,7 @@ func (h *RequestHandler) CreateRequestDepol(c *gin.Context) {
 	}
 
 	var request models.Request
-	request.RequesterID = uint(student.UserID)
+	request.RequesterID = username
 	request.RequestPlan = c.PostForm("startDate")
 	request.ReturnPlan = c.PostForm("endDate")
 	request.Activity = c.PostForm("tujuan")
@@ -633,9 +590,10 @@ func (h *RequestHandler) UpdateRequestDepolStatus(c *gin.Context) {
 
 	// 2. Ambil data dari body JSON
 	var input struct {
-		Status string `json:"status" binding:"required"`
-		UserID uint   `json:"user_id" binding:"required"`
-		Reason string `json:"reason"` // optional, hanya dipakai saat rejected
+		Status   string `json:"status" binding:"required"`
+		UserID   uint   `json:"user_id" binding:""`
+		Username string `json:"username" binding:""`
+		Reason   string `json:"reason"` // optional, hanya dipakai saat rejected
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ResponseHandler("error", "Invalid input: 'status' and 'user_id' are required", err.Error()))
@@ -655,7 +613,7 @@ func (h *RequestHandler) UpdateRequestDepolStatus(c *gin.Context) {
 	}
 
 	// 5. Kirim ke service untuk diproses
-	updatedRequest, err := h.service.ProcessRequestStatusDepol(uint(requestID), input.Status, int(input.UserID), input.Reason)
+	updatedRequest, err := h.service.ProcessRequestStatusDepol(uint(requestID), input.Status, input.Username, input.Reason)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return

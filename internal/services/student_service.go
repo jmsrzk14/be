@@ -48,8 +48,8 @@ func (s *StudentService) GetStudentByID(id uint) (*models.Student, error) {
 }
 
 // GetStudentByUserID returns a student by their external UserID from campus
-func (s *StudentService) GetStudentByUserID(userID int) (*models.Student, error) {
-	return s.repository.FindByUserID(userID)
+func (s *StudentService) GetStudentByUserID(username string) (*models.Student, error) {
+	return s.repository.FindByUserID(username)
 }
 
 // SyncStudents fetches students from the campus API and syncs them to the database

@@ -95,9 +95,9 @@ func (r *StudentRepository) FindByNIM(nim string) (*models.Student, error) {
 }
 
 // FindByUserID returns a student by external UserID from campus
-func (r *StudentRepository) FindByUserID(userID int) (*models.Student, error) {
+func (r *StudentRepository) FindByUserID(username string) (*models.Student, error) {
 	var student models.Student
-	result := r.db.Preload("Organization").Where("user_id = ?", userID).First(&student)
+	result := r.db.Preload("Organization").Where("user_name = ?", username).First(&student)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil

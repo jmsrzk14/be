@@ -29,8 +29,8 @@ func NewRequestService(db *gorm.DB) *RequestService {
 	}
 }
 
-func (s *RequestService) GetStudentByUserIDSarpras(userID int) (*models.Student, error) {
-	return s.studentRepo.FindByUserID(userID)
+func (s *RequestService) GetStudentByUserIDSarpras(username string) (*models.Student, error) {
+	return s.studentRepo.FindByUserID(username)
 }
 
 func (s *RequestService) CreateRequestSarpras(request *models.Request) error {
@@ -116,7 +116,7 @@ func (s *RequestService) GetRequestWithStatsSarpras(id uint) (*models.RequestWit
 	}, nil
 }
 
-func (s *RequestService) GetRequestsByRequesterIDSarpras(requesterID uint) ([]models.Request, error) {
+func (s *RequestService) GetRequestsByRequesterIDSarpras(requesterID string) ([]models.Request, error) {
 	requests, err := s.repository.FindAllByRequesterIDSarpras(requesterID)
 	if err != nil {
 		return nil, fmt.Errorf("gagal mengambil data request: %v", err)
@@ -141,7 +141,7 @@ func (s *RequestService) DeleteRequestSarpras(id uint) error {
 }
 
 // Approve or Reject Request
-func (s *RequestService) ProcessRequestStatusSarpras(requestID uint, status string, adminID int, reason string) (*models.Request, error) {
+func (s *RequestService) ProcessRequestStatusSarpras(requestID uint, status string, adminID string, reason string) (*models.Request, error) {
 	// Cari request
 	request, err := s.repository.FindByIDSarpras(requestID)
 	if err != nil {
@@ -153,7 +153,7 @@ func (s *RequestService) ProcessRequestStatusSarpras(requestID uint, status stri
 
 	// Update status dan admin ID
 	request.Status = status
-	request.ApproverID = uint(adminID)
+	request.ApproverID = adminID
 
 	// Simpan alasan penolakan jika ada
 	if status == "rejected" {
@@ -271,8 +271,8 @@ func (s *RequestService) UpdateItemStockOnTakenSarpras(id uint) error {
 	return nil
 }
 
-func (s *RequestService) GetStudentByUserIDDepol(userID int) (*models.Student, error) {
-	return s.studentRepo.FindByUserID(userID)
+func (s *RequestService) GetStudentByUserIDDepol(username string) (*models.Student, error) {
+	return s.studentRepo.FindByUserID(username)
 }
 
 func (s *RequestService) CreateRequestDepol(request *models.Request) error {
@@ -358,8 +358,8 @@ func (s *RequestService) GetRequestWithStatsDepol(id uint) (*models.RequestWithS
 	}, nil
 }
 
-func (s *RequestService) GetRequestsByRequesterIDDepol(requesterID uint) ([]models.Request, error) {
-	requests, err := s.repository.FindAllByRequesterIDDepol(requesterID)
+func (s *RequestService) GetRequestsByRequesterIDDepol(username string) ([]models.Request, error) {
+	requests, err := s.repository.FindAllByRequesterIDDepol(username)
 	if err != nil {
 		return nil, fmt.Errorf("gagal mengambil data request: %v", err)
 	}
@@ -383,7 +383,7 @@ func (s *RequestService) DeleteRequestDepol(id uint) error {
 }
 
 // Approve or Reject Request
-func (s *RequestService) ProcessRequestStatusDepol(requestID uint, status string, adminID int, reason string) (*models.Request, error) {
+func (s *RequestService) ProcessRequestStatusDepol(requestID uint, status string, adminID string, reason string) (*models.Request, error) {
 	// Cari request
 	request, err := s.repository.FindByIDDepol(requestID)
 	if err != nil {
@@ -395,7 +395,7 @@ func (s *RequestService) ProcessRequestStatusDepol(requestID uint, status string
 
 	// Update status dan admin ID
 	request.Status = status
-	request.ApproverID = uint(adminID)
+	request.ApproverID = adminID
 
 	// Simpan alasan penolakan jika ada
 	if status == "rejected" {
