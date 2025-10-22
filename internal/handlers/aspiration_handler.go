@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 
 	"bem_be/internal/models"
 	"bem_be/internal/services"
@@ -26,17 +24,17 @@ func NewAspirationHandler(db *gorm.DB) *AspirationHandler {
 		db:      db,
 	}
 }
-type AspirationResponse struct {
-	ID           uint   `json:"id"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	Category     string `json:"category"`
-	Content      string `json:"content"`
-	Priority     string `json:"priority_level"`
-	UserID       uint   `json:"user_id"`
-	StudentName  string `json:"student_name"`
-	CreatedAt    string `json:"created_at"`
-	
+
+type Aspiration struct {
+	ID            uint   `json:"id" gorm:"primaryKey"`
+	UserName      string `json:"user_name" gorm:"type:varchar(20);not null"`
+	Title         string `json:"title" gorm:"not null"`
+	Description   string `json:"description" gorm:"type:text;not null"`
+	Category      string `json:"category" gorm:"type:text;not null"`
+	Content       string `json:"content" gorm:"type:text;not null"`
+	PriorityLevel string `json:"priority_level" gorm:"type:text;not null"`
+	CreatedAt     string `json:"created_at"`
+	StudentName   string `json:"student_name"`
 }
 
 func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
@@ -58,18 +56,18 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 		return
 	}
 
-	var responseData []AspirationResponse
+	var responseData []Aspiration
 	for _, a := range aspirations {
-		responseData = append(responseData, AspirationResponse{
+		responseData = append(responseData, Aspiration{
 			ID:          a.ID,
 			Content:     a.Content,
 			Title:       a.Title,
 			Description: a.Description,
 			Category:    a.Category,
-			Priority:    a.PriorityLevel,
+			PriorityLevel:    a.PriorityLevel,
 			StudentName: a.Student.FullName,
-			CreatedAt: a.CreatedAt.Local().Format("2006-01-02 15:04:05"),
-			 // ambil nama mahasiswa
+			CreatedAt:   a.CreatedAt.Local().Format("2006-01-02 15:04:05"),
+			// ambil nama mahasiswa
 		})
 	}
 
@@ -97,71 +95,25 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 func (h *AspirationHandler) CreateAspiration(c *gin.Context) {
 	var aspiration models.Aspiration
 
-	// ✅ Ambil userID dari context (harus sama key-nya dengan yang diset di middleware)
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
+	// ✅ Baca body JSON dari frontend
+	if err := c.ShouldBindJSON(&aspiration); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
-			"message": "User belum login atau token tidak valid",
+			"message": "Format JSON tidak valid: " + err.Error(),
 		})
 		return
 	}
 
-	// ✅ Konversi userID ke int dengan aman
-	var userID int
-	switch v := userIDVal.(type) {
-	case float64:
-		userID = int(v)
-	case int:
-		userID = v
-	case uint:
-		userID = int(v)
-	default:
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": fmt.Sprintf("Tipe userID tidak dikenali: %T", userIDVal),
-		})
-		return
-	}
-
-	// ✅ Deteksi content-type dan lakukan binding sesuai jenisnya
-	contentType := c.GetHeader("Content-Type")
-	if strings.HasPrefix(contentType, "application/json") {
-		if err := c.ShouldBindJSON(&aspiration); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":  "error",
-				"message": "Invalid JSON body: " + err.Error(),
-			})
-			return
-		}
-	} else {
-		// fallback untuk form-data
-		aspiration.Title = c.PostForm("title")
-		aspiration.Description = c.PostForm("description")
-		aspiration.Category = c.PostForm("category")
-		aspiration.Content = c.PostForm("content")
-		aspiration.PriorityLevel = c.PostForm("priority_level")
-	}
-
-	// ✅ Trim spasi untuk memastikan data bersih
-	aspiration.Title = strings.TrimSpace(aspiration.Title)
-	aspiration.Description = strings.TrimSpace(aspiration.Description)
-	aspiration.Category = strings.TrimSpace(aspiration.Category)
-	aspiration.Content = strings.TrimSpace(aspiration.Content)
-	aspiration.PriorityLevel = strings.TrimSpace(aspiration.PriorityLevel)
-
-	// ✅ Set user_id
-	aspiration.UserID = userID
-
-	// ✅ Validasi input
+	// ✅ Validasi input wajib
 	if aspiration.Title == "" ||
 		aspiration.Description == "" ||
 		aspiration.Category == "" ||
 		aspiration.PriorityLevel == "" ||
-		aspiration.Content == "" {
+		aspiration.Content == "" ||
+		aspiration.UserName == "" { // pastikan username dikirim dari frontend
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
-			"message": "Semua field (title, description, category, content, priority_level) wajib diisi",
+			"message": "Semua field wajib diisi (title, description, category, content, priority_level, username)",
 		})
 		return
 	}

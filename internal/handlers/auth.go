@@ -230,7 +230,7 @@ func EditProfile(c *gin.Context) {
 	// Buat URL lengkap untuk gambar (biar frontend bisa akses)
 	imageURL := ""
 	if student.Image != "" {
-		imageURL = fmt.Sprintf("http://localhost:8080/uploads/user/%s", student.Image)
+		imageURL = fmt.Sprintf("http://localhost:9090/uploads/user/%s", student.Image)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
