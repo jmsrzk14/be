@@ -254,6 +254,63 @@ func (s *StudentService) AssignToBem(studentID uint, role, positionTitle, period
 
 	return &bem, nil
 }
+func (s *StudentService) AssignToMpm(studentID uint, role, positionTitle, periode string) (*models.MPM, error) {
+	var mpm models.MPM
+
+	// Cari BEM berdasarkan periode
+	err := s.db.Where("period = ?", periode).First(&mpm).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// kalau belum ada, buat baru
+		mpm = models.MPM{
+			Period: periode,
+		}
+		if err := s.db.Create(&mpm).Error; err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// --- cari student lama dengan role yang sama ---
+	var oldStudent models.Student
+	if err := s.db.Where("position = ?", role).First(&oldStudent).Error; err == nil {
+		// kosongkan position student lama
+		oldStudent.Position = ""
+		if err := s.db.Save(&oldStudent).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	// --- update student baru ---
+	var newStudent models.Student
+	if err := s.db.Where("user_id = ?", studentID).First(&newStudent).Error; err != nil {
+		return nil, err
+	}
+	
+	newStudent.Position = role
+	if err := s.db.Save(&newStudent).Error; err != nil {
+		return nil, err
+	}
+
+	// --- mapping role ke model MPM ---
+	switch strings.ToLower(role) {
+	case "ketua_mpm":
+		mpm.LeaderID = studentID
+	case "wakil_ketua_mpm":
+		mpm.CoLeaderID = studentID
+	case "sekretaris_mpm":
+		mpm.SecretaryID = studentID
+	default:
+		return nil, fmt.Errorf("unknown role: %s", role)
+	}
+
+	// simpan perubahan MPM
+	if err := s.db.Save(&mpm).Error; err != nil {
+		return nil, err
+	}
+
+	return &mpm, nil
+}
 
 func (s *StudentService) AssignToPeriod(studentID uint, orgID int, role string, periode string) (*models.Period, error) {
 	var period models.Period

@@ -8,10 +8,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"bem_be/internal/services"
-	"bem_be/internal/utils"
 	"bem_be/internal/database"
 	"bem_be/internal/models"
+	"bem_be/internal/services"
+	"bem_be/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -194,13 +194,20 @@ func (h *StudentHandler) AssignStudent(c *gin.Context) {
 
 	switch strings.ToLower(body.Category) {
 	case "bem":
-		// masuk ke model BEM
 		bem, err := h.service.AssignToBem(uint(id), body.Role, body.PositionTitle, body.Period)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		result = bem
+
+	case "mpm":
+		mpm, err := h.service.AssignToMpm(uint(id), body.Role, body.PositionTitle, body.Period)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		result = mpm
 
 	default:
 		period, err := h.service.AssignToPeriod(uint(id), body.OrganizationID, body.Role, body.Period)
