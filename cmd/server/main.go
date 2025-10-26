@@ -93,7 +93,7 @@ func main() {
 	router.GET("/api/associations/:id", associationHandler.GetAssociationByID)
 	router.GET("/api/club", clubHandler.GetAllClubsGuest)
 	router.GET("/api/department", departmentHandler.GetAllDepartmentsGuest)
-	router.GET("/api/bems/manage/:period", bemHandler.GetBEMByPeriod)
+	router.GET("/api/bems/manage", bemHandler.GetAllLeaders)
 	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 	router.GET("/api/news", newsHandler.GetAllNews)
 	router.GET("/api/announcements", announcementHandler.GetAllAnnouncement)
@@ -200,6 +200,7 @@ func main() {
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)
 
+			studentRoutes.GET("/organization", departmentHandler.GetAllOrganizations)
 			studentRoutes.GET("/departments", departmentHandler.GetAllDepartments)
 			studentRoutes.GET("/departments/:id", departmentHandler.GetDepartmentByID)
 

@@ -33,7 +33,7 @@ func NewDepartmentHandler(db *gorm.DB) *DepartmentHandler {
 func (h *DepartmentHandler) GetAllDepartments(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
-	search := c.Query("name") // pencarian pakai param ?name=
+	search := c.Query("name")
 
 	if page < 1 {
 		page = 1
@@ -45,6 +45,45 @@ func (h *DepartmentHandler) GetAllDepartments(c *gin.Context) {
 	offset := (page - 1) * perPage
 
 	departments, total, err := h.service.GetAllDepartments(perPage, offset, search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
+		return
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
+
+	metadata := utils.PaginationMetadata{
+		CurrentPage: page,
+		PerPage:     perPage,
+		TotalItems:  int(total),
+		TotalPages:  totalPages,
+	}
+
+	response := utils.MetadataFormatResponse(
+		"success",
+		"Berhasil list mendapatkan data departments",
+		metadata,
+		departments,
+	)
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *DepartmentHandler) GetAllOrganizations(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	search := c.Query("name")
+
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 10
+	}
+
+	offset := (page - 1) * perPage
+
+	departments, total, err := h.service.GetAllOrganizations(perPage, offset, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
 		return

@@ -73,6 +73,10 @@ func (s *DepartmentService) GetAllDepartments(limit, offset int, search string) 
     return s.repository.GetAllDepartments(limit, offset, search)
 }
 
+func (s *DepartmentService) GetAllOrganizations(limit, offset int, search string) ([]models.Organization, int64, error) {
+    return s.repository.GetAllOrganizations(limit, offset, search)
+}
+
 func (s *DepartmentService) GetAllDepartmentsGuest() ([]models.Organization, error) {
     return s.repository.GetAllDepartmentsGuest()
 }

@@ -126,22 +126,30 @@ func (r *BemRepository) RestoreByName(code string) (*models.BEM, error) {
 // 	return count > 0, nil
 // }
 
-func (r *BemRepository) GetBEMByPeriod(period string) (*models.BEM, error) {
-	var bem models.BEM
+func (r *BemRepository) GetAllLeaders() ([]models.Student, error) {
+	var students []models.Student
 
 	err := r.db.
-		Preload("Leader").
-		Preload("CoLeader").
-		Preload("Secretary1").
-		Preload("Secretary2").
-		Preload("Treasurer1").
-		Preload("Treasurer2").
-		Where("period = ? AND deleted_at IS NULL", period).
-		First(&bem).Error
+		Joins("LEFT JOIN organizations ON organizations.id = students.organization_id").
+		Preload("Organization").
+		Where(`
+			students.position IS NOT NULL
+			AND students.position <> ''
+			AND (
+				students.position LIKE '%_bem%' OR
+				students.position LIKE '%_mpm%'
+			)
+			AND students.position NOT LIKE '%_department%'
+			AND students.position NOT LIKE '%_himpunan%'
+			AND students.position NOT LIKE '%_ukm%'
+			AND students.deleted_at IS NULL
+		`).
+		Order("students.position ASC").
+		Find(&students).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &bem, nil
+	return students, nil
 }

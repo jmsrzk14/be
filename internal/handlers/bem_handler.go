@@ -171,14 +171,12 @@ func (h *BemHandler) DeleteBem(c *gin.Context) {
 	})
 } 
 
-func (h *BemHandler) GetBEMByPeriod(c *gin.Context) {
-	period := c.Param("period")
-
-	bem, err := h.service.GetBEMByPeriod(period)
+func (h *BemHandler) GetAllLeaders(c *gin.Context) {
+	students, err := h.service.GetAllLeaders()
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "BEM not found"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch data"})
 		return
 	}
 
-	c.JSON(http.StatusOK, bem)
+	c.JSON(http.StatusOK, students)
 }

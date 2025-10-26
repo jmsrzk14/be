@@ -176,7 +176,7 @@ func GetCurrentUser(c *gin.Context) {
 func EditProfile(c *gin.Context) {
 	// Ambil username dari JSON body
 	var request struct {
-		Username  string `json:"username"`
+		Username  string `form:"username"`
 		LinkedIn  string `form:"linkedin"`
 		Instagram string `form:"instagram"`
 		WhatsApp  string `form:"whatsapp"`
