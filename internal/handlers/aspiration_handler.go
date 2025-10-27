@@ -59,14 +59,14 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 	var responseData []Aspiration
 	for _, a := range aspirations {
 		responseData = append(responseData, Aspiration{
-			ID:          a.ID,
-			Content:     a.Content,
-			Title:       a.Title,
-			Description: a.Description,
-			Category:    a.Category,
-			PriorityLevel:    a.PriorityLevel,
-			StudentName: a.Student.FullName,
-			CreatedAt:   a.CreatedAt.Local().Format("2006-01-02 15:04:05"),
+			ID:            a.ID,
+			Content:       a.Content,
+			Title:         a.Title,
+			Description:   a.Description,
+			Category:      a.Category,
+			PriorityLevel: a.PriorityLevel,
+			StudentName:   a.Student.FullName,
+			CreatedAt:     a.CreatedAt.Local().Format("2006-01-02 15:04:05"),
 			// ambil nama mahasiswa
 		})
 	}
@@ -92,6 +92,45 @@ func (h *AspirationHandler) GetAllAspirations(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// DeleteAspiration menghapus aspirasi berdasarkan ID
+func (h *AspirationHandler) DeleteAspiration(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "ID aspirasi tidak valid",
+		})
+		return
+	}
+
+	// ✅ Cek apakah aspirasi ada
+	var aspiration models.Aspiration
+	if err := h.db.First(&aspiration, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "Aspirasi tidak ditemukan",
+		})
+		return
+	}
+
+	// ✅ Hapus aspirasi
+	if err := h.db.Delete(&aspiration).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal menghapus aspirasi: " + err.Error(),
+		})
+		return
+	}
+
+	// ✅ Response sukses
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": fmt.Sprintf("Aspirasi dengan ID %d berhasil dihapus", id),
+	})
+}
+
 func (h *AspirationHandler) CreateAspiration(c *gin.Context) {
 	var aspiration models.Aspiration
 
@@ -133,4 +172,5 @@ func (h *AspirationHandler) CreateAspiration(c *gin.Context) {
 		"message": "Aspirasi berhasil dikirim",
 		"data":    aspiration,
 	})
+
 }

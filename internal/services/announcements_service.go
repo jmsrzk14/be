@@ -86,9 +86,12 @@ func (s *AnnouncementService) GetAnnouncementByID(id uint) (*models.Announcement
 	return announcement, nil
 }
 // GetAllannouncements gets all announcements
-func (s *AnnouncementService) GetAllAnnouncements(limit, offset int) ([]models.Announcement, int64, error) {
-    return s.repository.GetAllAnnouncements(limit, offset)
+// GetAllAnnouncements gets all announcements with filters and pagination
+func (s *AnnouncementService) GetAllAnnouncements(page, limit int, title, content, category string) ([]models.Announcement, int64, error) {
+	offset := (page - 1) * limit
+	return s.repository.GetAllAnnouncements(limit, offset, title, content, category)
 }
+
 
 
 // Deleteannouncement deletes a announcement

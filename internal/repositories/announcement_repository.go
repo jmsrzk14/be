@@ -52,21 +52,37 @@ func (r *AnnouncementRepository) FindByName(code string) (*models.Announcement, 
 }
 
 // FindAll finds all announcements
-func (r *AnnouncementRepository) GetAllAnnouncements(limit, offset int) ([]models.Announcement, int64, error) {
+// GetAllAnnouncements finds all announcements with pagination and optional filters
+func (r *AnnouncementRepository) GetAllAnnouncements(limit, offset int, title, content, category string) ([]models.Announcement, int64, error) {
     var announcements []models.Announcement
     var total int64
 
     query := r.db.Model(&models.Announcement{})
+
+    // Tambahkan filter jika ada input pencarian
+    if title != "" {
+        query = query.Where("title ILIKE ?", "%"+title+"%")
+    }
+    if content != "" {
+        query = query.Where("content ILIKE ?", "%"+content+"%")
+    }
+    if category != "" {
+        query = query.Where("category ILIKE ?", "%"+category+"%")
+    }
+
+    // Hitung total data
     if err := query.Count(&total).Error; err != nil {
         return nil, 0, err
     }
 
-    if err := query.Limit(limit).Offset(offset).Find(&announcements).Error; err != nil {
+    // Ambil data sesuai limit dan offset
+    if err := query.Limit(limit).Offset(offset).Order("created_at DESC").Find(&announcements).Error; err != nil {
         return nil, 0, err
     }
 
     return announcements, total, nil
 }
+
 
 
 // DeleteByID deletes a announcement by ID

@@ -32,9 +32,13 @@ func NewAnnouncementHandler(db *gorm.DB) *AnnouncementHandler {
 }
 
 // GetAllAnnouncements returns all announcements
+// GetAllAnnouncements returns all announcements with pagination and optional filters
 func (h *AnnouncementHandler) GetAllAnnouncement(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	title := c.DefaultQuery("title", "")
+	content := c.DefaultQuery("content", "")
+	category := c.DefaultQuery("category", "")
 
 	if page < 1 {
 		page = 1
@@ -43,18 +47,13 @@ func (h *AnnouncementHandler) GetAllAnnouncement(c *gin.Context) {
 		perPage = 10
 	}
 
-	offset := (page - 1) * perPage
-
-	announcementList, total, err := h.service.GetAllAnnouncements(perPage, offset)
+	announcementList, total, err := h.service.GetAllAnnouncements(page, perPage, title, content, category)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	var totalPages int
-	if perPage > 0 {
-		totalPages = int(math.Ceil(float64(total) / float64(perPage)))
-	}
+	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
@@ -65,9 +64,15 @@ func (h *AnnouncementHandler) GetAllAnnouncement(c *gin.Context) {
 			"total_items":  total,
 			"total_pages":  totalPages,
 		},
+		"filters": gin.H{
+			"title":    title,
+			"content":  content,
+			"category": category,
+		},
 		"data": announcementList,
 	})
 }
+
 
 // GetAnnouncementByID returns an announcement by ID
 func (h *AnnouncementHandler) GetAnnouncementByID(c *gin.Context) {
