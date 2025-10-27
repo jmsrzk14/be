@@ -41,6 +41,15 @@ func (r *AssociationRepository) FindByID(id uint) (*models.Organization, error) 
 	return &association, nil
 }
 
+func (r *AssociationRepository) FindByShortName(name string) (*models.Organization, error) {
+	var association models.Organization
+	err := r.db.Where("short_name = ?", name).First(&association).Error
+	if err != nil {
+		return nil, err
+	}
+	return &association, nil
+}
+
 // FindByName finds a association by code
 func (r *AssociationRepository) FindByName(code string) (*models.Organization, error) {
 	var association models.Organization
@@ -117,26 +126,28 @@ func (r *AssociationRepository) RestoreByName(code string) (*models.Organization
 	return r.FindByID(deletedAssociation.ID)
 }
 
-// // CheckNameExists checks if a code exists, including soft-deleted records
-// func (r *AssociationRepository) CheckNameExists(code string, excludeID uint) (bool, error) {
-// 	var count int64
-// 	query := r.db.Unscoped().Model(&models.Organization{}).Where("code = ?", code)
-	
-// 	// Exclude the current record if updating
-// 	if excludeID > 0 {
-// 		query = query.Where("id != ?", excludeID)
-// 	}
-	
-// 	err := query.Count(&count).Error
-// 	if err != nil {
-// 		return false, err
-// 	}
-	
-// 	return count > 0, nil
-// } 
-
 func (r *AssociationRepository) GetAllAssociationsGuest() ([]models.Organization, error) {
     var associations []models.Organization
     err := r.db.Where("category_id = ?", 3).Find(&associations).Error
     return associations, err
+}
+
+func (r *AssociationRepository) FindAdminByShortNameAndPeriod(shortName string, period string) (*models.Period, error) {
+	var result models.Period
+
+	err := r.db.
+		Joins("JOIN organizations ON organizations.id = periods.organization_id").
+		Preload("Leader").
+		Preload("CoLeader").
+		Preload("Secretary1").
+		Preload("Secretary2").
+		Preload("Treasurer1").
+		Preload("Treasurer2").
+		Where("organizations.short_name = ? AND periods.period = ?", shortName, period).
+		First(&result).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

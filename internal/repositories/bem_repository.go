@@ -108,24 +108,6 @@ func (r *BemRepository) RestoreByName(code string) (*models.BEM, error) {
 	return r.FindByID(deletedBem.ID)
 }
 
-// // CheckNameExists checks if a code exists, including soft-deleted records
-// func (r *bemRepository) CheckNameExists(code string, excludeID uint) (bool, error) {
-// 	var count int64
-// 	query := r.db.Unscoped().Model(&models.bem{}).Where("code = ?", code)
-
-// 	// Exclude the current record if updating
-// 	if excludeID > 0 {
-// 		query = query.Where("id != ?", excludeID)
-// 	}
-
-// 	err := query.Count(&count).Error
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	return count > 0, nil
-// }
-
 func (r *BemRepository) GetAllLeaders() ([]models.Student, error) {
 	var students []models.Student
 

@@ -86,6 +86,10 @@ func (s *AssociationService) GetAssociationByID(id uint) (*models.Organization, 
 	return s.repository.FindByID(id)
 }
 
+func (s *AssociationService) GetAssociationByShortName(name string) (*models.Organization, error) {
+	return s.repository.FindByShortName(name)
+}
+
 // GetAllAssociations gets all associations
 func (s *AssociationService) GetAllAssociations(limit, offset int, search string) ([]models.Organization, int64, error) {
     return s.repository.GetAllAssociations(limit, offset, search)
@@ -134,22 +138,6 @@ func (s *AssociationService) GetAssociationWithStats(id uint) (*AssociationWithS
 	}, nil
 }
 
-// GetAllAssociationsWithStats gets all associations with their statistics
-// func (s *AssociationService) GetAllAssociationsWithStats() ([]AssociationWithStats, error) {
-// 	// Get all associations
-// 	associations, err := s.repository.Get()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Build response with stats
-// 	result := make([]AssociationWithStats, len(associations))
-// 	for i, association := range associations {
-		
-// 		result[i] = AssociationWithStats{
-// 			Association:  association,
-// 		}
-// 	}
-
-// 	return result, nil
-// } 
+func (s *AssociationService) GetAdminAssociation(shortName, period string) (*models.Period, error) {
+	return s.repository.FindAdminByShortNameAndPeriod(shortName, period)
+}

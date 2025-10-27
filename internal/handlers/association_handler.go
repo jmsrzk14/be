@@ -116,6 +116,30 @@ func (h *AssociationHandler) GetAssociationByID(c *gin.Context) {
 	})
 }
 
+func (h *AssociationHandler) GetAssociationByShortName(c *gin.Context) {
+    shortName := c.Param("shortName")
+
+    // Optional query param, misal nanti dipakai untuk stats
+    stats := c.Query("stats")
+    _ = stats // sementara tidak digunakan, bisa dihapus jika tidak dipakai
+
+    result, err := h.service.GetAssociationByShortName(shortName)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status": "error",
+            "message": "Association not found",
+            "error":  err.Error(),
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  "success",
+        "message": "Association retrieved successfully",
+        "data":    result,
+    })
+}
+
 // CreateAssociation creates a new association
 func (h *AssociationHandler) CreateAssociation(c *gin.Context) {
 	var association models.Organization
@@ -229,3 +253,22 @@ func (h *AssociationHandler) DeleteAssociation(c *gin.Context) {
 		"message": "Association deleted successfully",
 	})
 } 
+
+func (h *AssociationHandler) GetAdminAssociations(c *gin.Context) {
+	shortName := c.Param("shortName")
+	period := c.Param("period")
+
+	data, err := h.service.GetAdminAssociation(shortName, period)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "Data not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   data,
+	})
+}

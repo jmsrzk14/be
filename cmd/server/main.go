@@ -90,7 +90,8 @@ func main() {
 
 	// Guest Page
 	router.GET("/api/association", associationHandler.GetAllAssociationsGuest)
-	router.GET("/api/associations/:id", associationHandler.GetAssociationByID)
+	router.GET("/api/associations/admin/:shortName/:period", associationHandler.GetAdminAssociations)
+	router.GET("/api/associations/:shortName", associationHandler.GetAssociationByShortName)
 	router.GET("/api/club", clubHandler.GetAllClubsGuest)
 	router.GET("/api/department", departmentHandler.GetAllDepartmentsGuest)
 	router.GET("/api/bems/manage", bemHandler.GetAllLeaders)
