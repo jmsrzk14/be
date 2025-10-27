@@ -73,3 +73,4 @@ type Finance struct {
 func (Finance) TableName() string {
 	return "finances"
 }
+

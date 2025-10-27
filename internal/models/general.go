@@ -9,9 +9,6 @@ import (
 // News represents an article or announcement.
 type News struct {
 	ID            uint           `json:"id" gorm:"primaryKey"`
-	BEMID         *uint          `json:"bem_id,omitempty" gorm:"index"`
-	AssociationID *uint          `json:"association_id,omitempty" gorm:"index"`
-	DepartmentID  *uint          `json:"department_id,omitempty" gorm:"index"`
 	Title         string         `json:"title" gorm:"type:varchar(255);not null"`
 	Content       string         `json:"content" gorm:"type:text;not null"`
 	Category      string         `json:"category" gorm:"type:varchar(100)"`

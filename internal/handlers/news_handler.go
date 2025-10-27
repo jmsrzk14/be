@@ -20,12 +20,14 @@ import (
 // NewsHandler menangani request HTTP terkait berita
 type NewsHandler struct {
 	service *services.NewsService
+	notificationService *services.NotificationService
 }
 
 // NewNewsHandler membuat handler berita baru
-func NewNewsHandler(db *gorm.DB) *NewsHandler {
+func NewNewsHandler(db *gorm.DB, notificationService *services.NotificationService) *NewsHandler {
 	return &NewsHandler{
-		service: services.NewNewsService(db),
+		service:             services.NewNewsService(db),
+		notificationService: notificationService,
 	}
 }
 
@@ -123,9 +125,6 @@ func (h *NewsHandler) CreateNews(c *gin.Context) {
 	news.Content = htmlSanitizer.Sanitize(rawContent)
 
 	news.Category = c.PostForm("category")
-	news.BEMID = parseOptionalUint(c.PostForm("bem_id"))
-	news.AssociationID = parseOptionalUint(c.PostForm("association_id"))
-	news.DepartmentID = parseOptionalUint(c.PostForm("department_id"))
 
 	file, err := c.FormFile("image")
 	if err == nil {
@@ -161,6 +160,7 @@ func (h *NewsHandler) CreateNews(c *gin.Context) {
 		return
 	}
 
+	// Simpan berita ke database
 	if err := h.service.CreateNews(&news); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
@@ -169,12 +169,33 @@ func (h *NewsHandler) CreateNews(c *gin.Context) {
 		return
 	}
 
+	title := "Berita Baru: " + news.Title
+	message := fmt.Sprintf("Berita baru telah diterbitkan di kategori %s. Cek sekarang!", news.Category)
+
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "Berita berhasil dibuat",
-		"data":    news,
+		"status":       "success",
+		"message":      "Berita berhasil dibuat",
+		"data":         news,
+		"notification": createdNotif, 
 	})
 }
+
 
 // UpdateNews memperbarui berita yang ada.
 func (h *NewsHandler) UpdateNews(c *gin.Context) {
@@ -201,15 +222,6 @@ func (h *NewsHandler) UpdateNews(c *gin.Context) {
 	}
 	if category := c.PostForm("category"); category != "" {
 		existingNews.Category = category
-	}
-	if v := c.PostForm("bem_id"); v != "" {
-		existingNews.BEMID = parseOptionalUint(v)
-	}
-	if v := c.PostForm("association_id"); v != "" {
-		existingNews.AssociationID = parseOptionalUint(v)
-	}
-	if v := c.PostForm("department_id"); v != "" {
-		existingNews.DepartmentID = parseOptionalUint(v)
 	}
 
 	file, err := c.FormFile("image")

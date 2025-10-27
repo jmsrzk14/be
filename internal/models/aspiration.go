@@ -17,9 +17,7 @@ type Aspiration struct {
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
-
-	// 🔥 ini kuncinya:
-	Student Student `gorm:"foreignKey:UserName;references:UserName;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Student       Student        `gorm:"foreignKey:UserName;references:UserName;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }
 
 func (Aspiration) TableName() string {

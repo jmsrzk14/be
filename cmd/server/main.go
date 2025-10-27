@@ -7,6 +7,7 @@ import (
 	"bem_be/internal/auth"
 	"bem_be/internal/database"
 	"bem_be/internal/handlers"
+	"bem_be/internal/repositories"
 	"bem_be/internal/services"
 	"bem_be/internal/utils"
 
@@ -71,21 +72,27 @@ func main() {
 	router.POST("/api/auth/totp/setup", handlers.TOTPSetup)
 	router.POST("/api/auth/totp/verify", handlers.TOTPVerify)
 
+	// Initialize repositories and services
+	notificationRepo := repositories.NewNotificationRepository(database.DB)
+	notificationService := services.NewNotificationService(notificationRepo)
+
+	// Handlers
+	newsHandler := handlers.NewNewsHandler(database.DB, notificationService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
+
 	// Create handlers
 	campusAuthHandler := handlers.NewCampusAuthHandler()
-	newsHandler := handlers.NewNewsHandler(database.DB)
 	studentHandler := handlers.NewStudentHandler(database.DB, campusAuthService)
 	associationHandler := handlers.NewAssociationHandler(database.DB)
 	bemHandler := handlers.NewBemHandler(database.DB)
 	announcementHandler := handlers.NewAnnouncementHandler(database.DB)
 	clubHandler := handlers.NewClubHandler(database.DB)
-	galeryHandler := handlers.NewGaleryHandler(database.DB)
 	departmentHandler := handlers.NewDepartmentHandler(database.DB)
 	organizationHandler := handlers.NewOrganizationHandler(database.DB)
 	visimisiHandler := handlers.NewVisiMisiHandler(database.DB)
 	requestHandler := handlers.NewRequestHandler(database.DB)
 	itemHandler := handlers.NewItemHandler(database.DB)
-	aspirationHandler := handlers.NewAspirationHandler(database.DB) // <-- gunakan pointer, bukan dereference
+	aspirationHandler := handlers.NewAspirationHandler(database.DB)
 	eventHandler := handlers.NewEventHandler(database.DB)
 
 	// Guest Page
@@ -158,11 +165,8 @@ func main() {
 			adminRoutes.PUT("/announcements/:id", announcementHandler.UpdateAnnouncement)
 			adminRoutes.DELETE("/announcements/:id", announcementHandler.DeleteAnnouncement)
 
-			adminRoutes.GET("/galery", galeryHandler.GetAllGalerys)
-			adminRoutes.GET("/galery/:id", galeryHandler.GetGaleryByID)
-			adminRoutes.POST("/galery", galeryHandler.CreateGalery)
-			adminRoutes.PUT("/galery/:id", galeryHandler.UpdateGalery)
-			adminRoutes.DELETE("/galery/:id", galeryHandler.DeleteGalery)
+			adminRoutes.GET("/notifications/:username", notificationHandler.GetUserNotifications)
+			adminRoutes.PUT("/notifications/:username/:notificationID/read", notificationHandler.MarkAsRead)
 
 			adminRoutes.GET("/department", departmentHandler.GetAllDepartments)
 			adminRoutes.GET("/department/:id", departmentHandler.GetDepartmentByID)
@@ -200,6 +204,9 @@ func main() {
 
 			studentRoutes.GET("/clubs", clubHandler.GetAllClubs)
 			studentRoutes.GET("/clubs/:id", clubHandler.GetClubByID)
+
+			studentRoutes.GET("/notifications/:username", notificationHandler.GetUserNotifications)
+			studentRoutes.POST("/notifications/:username/:notificationID/read", notificationHandler.MarkAsRead)
 
 			studentRoutes.GET("/organization", departmentHandler.GetAllOrganizations)
 			studentRoutes.GET("/departments", departmentHandler.GetAllDepartments)

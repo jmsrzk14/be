@@ -91,6 +91,8 @@ func Initialize() {
 		&models.Calender{},
 		&models.Announcement{},
 		&models.MPM{},
+		&models.Notification{},
+		&models.UserNotification{},
 	}
 
 	for _, model := range modelsToMigrate {
