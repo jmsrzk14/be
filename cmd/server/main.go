@@ -129,7 +129,6 @@ func main() {
 			adminRoutes.GET("/students", studentHandler.GetAllStudents)
 			adminRoutes.GET("/students/:id", studentHandler.GetStudentByID)
 			// adminRoutes.GET("/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)
-			adminRoutes.POST("/students/sync", studentHandler.SyncStudents)
 			adminRoutes.PUT("/students/:id/assign", studentHandler.AssignStudent)
 
 			adminRoutes.GET("/news", newsHandler.GetAllNews)
@@ -253,6 +252,7 @@ func main() {
 
 			studentRoutes.POST("/aspirations", aspirationHandler.CreateAspiration)
 			studentRoutes.GET("/aspirations", aspirationHandler.GetAllAspirations)
+			studentRoutes.DELETE("/aspirations/:id", aspirationHandler.DeleteAspiration)
 
 			studentRoutes.POST("/events", eventHandler.CreateEvent)
 			studentRoutes.PUT("/events/:id", eventHandler.UpdateEvent)
