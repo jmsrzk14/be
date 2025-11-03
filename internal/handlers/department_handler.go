@@ -20,13 +20,15 @@ import (
 
 // DepartmentHandler handles HTTP requests related to departments
 type DepartmentHandler struct {
-	service *services.DepartmentService
+	service             *services.DepartmentService
+	notificationService *services.NotificationService
 }
 
 // NewDepartmentHandler creates a new department handler
-func NewDepartmentHandler(db *gorm.DB) *DepartmentHandler {
+func NewDepartmentHandler(db *gorm.DB, notificationService *services.NotificationService) *DepartmentHandler {
 	return &DepartmentHandler{
-		service: services.NewDepartmentService(db),
+		service:             services.NewDepartmentService(db),
+		notificationService: notificationService,
 	}
 }
 
@@ -179,10 +181,30 @@ func (h *DepartmentHandler) CreateDepartment(c *gin.Context) {
 		return
 	}
 
+	title := "Departemen Baru: " + department.Name
+	message := fmt.Sprintf("Departemen baru telah dibuat. Cek sekarang!")
+
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Department created successfully",
-		"data":    department,
+		"status":       "success",
+		"message":      "Department created successfully",
+		"data":         department,
+		"notification": createdNotif,
 	})
 }
 

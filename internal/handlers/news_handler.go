@@ -19,7 +19,7 @@ import (
 
 // NewsHandler menangani request HTTP terkait berita
 type NewsHandler struct {
-	service *services.NewsService
+	service             *services.NewsService
 	notificationService *services.NotificationService
 }
 
@@ -192,10 +192,9 @@ func (h *NewsHandler) CreateNews(c *gin.Context) {
 		"status":       "success",
 		"message":      "Berita berhasil dibuat",
 		"data":         news,
-		"notification": createdNotif, 
+		"notification": createdNotif,
 	})
 }
-
 
 // UpdateNews memperbarui berita yang ada.
 func (h *NewsHandler) UpdateNews(c *gin.Context) {

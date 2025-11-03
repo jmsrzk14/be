@@ -182,3 +182,21 @@ func (h *MpmHandler) GetMPMByPeriod(c *gin.Context) {
 
 	c.JSON(http.StatusOK, mpm)
 }
+
+func (h *MpmHandler) GetMpmPeriod(c *gin.Context) {
+	period := c.Param("period")
+
+	data, err := h.service.GetMpmPeriod(period)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "Data not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   data,
+	})
+}

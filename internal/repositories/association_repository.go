@@ -136,7 +136,6 @@ func (r *AssociationRepository) FindAdminByShortNameAndPeriod(shortName string, 
 	var result models.Period
 
 	err := r.db.
-		Joins("JOIN organizations ON organizations.id = periods.organization_id").
 		Preload("Leader").
 		Preload("CoLeader").
 		Preload("Secretary1").

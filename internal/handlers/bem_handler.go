@@ -101,27 +101,6 @@ func (h *BemHandler) GetBemByID(c *gin.Context) {
 	})
 }
 
-// Createbem creates a new bem
-func (h *BemHandler) CreateBem(c *gin.Context) {
-	var bem models.BEM
-
-	if err := c.ShouldBindJSON(&bem); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	if err := h.service.CreateBem(&bem); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "Bem created successfully",
-		"data":    bem,
-	})
-}
-
 // Updatebem updates a bem
 func (h *BemHandler) UpdateBem(c *gin.Context) {
 	idStr := c.Param("id")
@@ -179,4 +158,22 @@ func (h *BemHandler) GetAllLeaders(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, students)
+}
+
+func (h *BemHandler) GetBemPeriod(c *gin.Context) {
+	period := c.Param("period")
+
+	data, err := h.service.GetBemPeriod(period)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "Data not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   data,
+	})
 }

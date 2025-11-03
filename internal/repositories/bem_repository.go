@@ -135,3 +135,48 @@ func (r *BemRepository) GetAllLeaders() ([]models.Student, error) {
 
 	return students, nil
 }
+
+func (r *BemRepository) FindBemByPeriod(period string) (map[string]interface{}, error) {
+	var bem models.BEM
+
+	// Ambil data BEM berdasarkan period
+	if err := r.db.Where("period = ?", period).First(&bem).Error; err != nil {
+		return nil, err
+	}
+
+	// Ambil data mahasiswa berdasarkan ID jabatan
+	var leader, coLeader, secretary1, secretary2, treasurer1, treasurer2 models.Student
+
+	// Gunakan ID yang valid (tidak perlu pointer check karena uint default = 0)
+	if bem.LeaderID != 0 {
+		r.db.First(&leader, bem.LeaderID)
+	}
+	if bem.CoLeaderID != 0 {
+		r.db.First(&coLeader, bem.CoLeaderID)
+	}
+	if bem.Secretary1ID != 0 {
+		r.db.First(&secretary1, bem.Secretary1ID)
+	}
+	if bem.Secretary2ID != 0 {
+		r.db.First(&secretary2, bem.Secretary2ID)
+	}
+	if bem.Treasurer1ID != 0 {
+		r.db.First(&treasurer1, bem.Treasurer1ID)
+	}
+	if bem.Treasurer2ID != 0 {
+		r.db.First(&treasurer2, bem.Treasurer2ID)
+	}
+
+	// Gabungkan hasilnya dalam map
+	result := map[string]interface{}{
+		"period":       bem.Period,
+		"leader":       leader,
+		"co_leader":    coLeader,
+		"secretary_1":  secretary1,
+		"secretary_2":  secretary2,
+		"treasurer_1":  treasurer1,
+		"treasurer_2":  treasurer2,
+	}
+
+	return result, nil
+}

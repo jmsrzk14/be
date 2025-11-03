@@ -22,12 +22,13 @@ import (
 type AnnouncementHandler struct {
 	service *services.AnnouncementService
 	db      *gorm.DB
+	notificationService *services.NotificationService
 }
 
-func NewAnnouncementHandler(db *gorm.DB) *AnnouncementHandler {
+func NewAnnouncementHandler(db *gorm.DB, notificationService *services.NotificationService) *AnnouncementHandler {
 	return &AnnouncementHandler{
 		service: services.NewAnnouncementService(db),
-		db:      db,
+		notificationService: notificationService,
 	}
 }
 
@@ -175,10 +176,30 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 		return
 	}
 
+	title := "Pengumuman Baru: " + announcement.Title
+	message := fmt.Sprintf("Pengumuman baru telah dibuat. Cek sekarang!")
+
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",
 		"message": "Announcement created successfully",
 		"data":    announcement,
+		"notification": createdNotif,
 	})
 }
 

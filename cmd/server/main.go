@@ -42,6 +42,9 @@ func main() {
 		log.Fatalf("Gagal membuat pengguna admin: %v", err)
 	}
 
+	statusRepo := repositories.NewStatusRepository()
+	handlers.CreateStatusSeeder(statusRepo)
+
 	// Create a new Gin router
 	router := gin.Default()
 
@@ -83,21 +86,24 @@ func main() {
 	// Create handlers
 	campusAuthHandler := handlers.NewCampusAuthHandler()
 	studentHandler := handlers.NewStudentHandler(database.DB, campusAuthService)
-	associationHandler := handlers.NewAssociationHandler(database.DB)
+	associationHandler := handlers.NewAssociationHandler(database.DB, notificationService)
 	bemHandler := handlers.NewBemHandler(database.DB)
-	announcementHandler := handlers.NewAnnouncementHandler(database.DB)
-	clubHandler := handlers.NewClubHandler(database.DB)
-	departmentHandler := handlers.NewDepartmentHandler(database.DB)
+	announcementHandler := handlers.NewAnnouncementHandler(database.DB, notificationService)
+	clubHandler := handlers.NewClubHandler(database.DB, notificationService)
+	departmentHandler := handlers.NewDepartmentHandler(database.DB, notificationService)
 	organizationHandler := handlers.NewOrganizationHandler(database.DB)
 	visimisiHandler := handlers.NewVisiMisiHandler(database.DB)
-	requestHandler := handlers.NewRequestHandler(database.DB)
+	requestHandler := handlers.NewRequestHandler(database.DB, notificationService)
 	itemHandler := handlers.NewItemHandler(database.DB)
-	aspirationHandler := handlers.NewAspirationHandler(database.DB)
-	eventHandler := handlers.NewEventHandler(database.DB)
+	aspirationHandler := handlers.NewAspirationHandler(database.DB, notificationService)
+	eventHandler := handlers.NewEventHandler(database.DB, notificationService)
+	mpmHandler := handlers.NewMpmHandler(database.DB)
 
 	// Guest Page
 	router.GET("/api/association", associationHandler.GetAllAssociationsGuest)
 	router.GET("/api/associations/admin/:shortName/:period", associationHandler.GetAdminAssociations)
+	router.GET("/api/bem/:period", bemHandler.GetBemPeriod)
+	router.GET("/api/mpm/:period", mpmHandler.GetMpmPeriod)
 	router.GET("/api/associations/:shortName", associationHandler.GetAssociationByShortName)
 	router.GET("/api/club", clubHandler.GetAllClubsGuest)
 	router.GET("/api/department", departmentHandler.GetAllDepartmentsGuest)
@@ -109,6 +115,9 @@ func main() {
 	router.GET("/api/item_sarpras", itemHandler.GetAllItemsSarpras)
 	router.GET("/api/item_depol", itemHandler.GetAllItemsDepol)
 	router.GET("/api/events", eventHandler.GetEventsCurrentMonth)
+	router.GET("/api/status", func(c *gin.Context) {
+		handlers.GetStatusAspirations(c, statusRepo)
+	})
 
 	// Protected routes
 	authRequired := router.Group("/api")
@@ -154,7 +163,6 @@ func main() {
 
 			adminRoutes.GET("/bem", bemHandler.GetAllBems)
 			adminRoutes.GET("/bems/:id", bemHandler.GetBemByID)
-			adminRoutes.POST("/bems", bemHandler.CreateBem)
 			adminRoutes.PUT("/bems/:id", bemHandler.UpdateBem)
 			adminRoutes.DELETE("/bems/:id", bemHandler.DeleteBem)
 
@@ -258,6 +266,13 @@ func main() {
 			studentRoutes.PUT("/events/:id", eventHandler.UpdateEvent)
 			studentRoutes.GET("/events/current-month", eventHandler.GetEventsCurrentMonth)
 			studentRoutes.DELETE("/events/:id", eventHandler.DeleteEvent)
+
+			studentRoutes.GET("/status", func(c *gin.Context) {
+				handlers.GetStatusAspirations(c, statusRepo)
+			})
+			studentRoutes.PUT("/status", func(c *gin.Context) {
+				handlers.UpdateStatusAspirations(c, statusRepo)
+			})
 		}
 	}
 

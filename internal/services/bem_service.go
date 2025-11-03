@@ -21,44 +21,6 @@ func NewBemService(db *gorm.DB) *BemService {
     }
 }
 
-// Createbem creates a new bem
-func (s *BemService) CreateBem(bem *models.BEM) error {
-	// Check if code exists (including soft-deleted)
-	// exists, err := s.repository.CheckNameExists(bem.Name, 0)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if exists {
-	// 	// Try to find a soft-deleted bem with this code
-	// 	deletedbem, err := s.repository.FindDeletedByName(bem.Name)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	if deletedbem != nil {
-	// 		// Restore the soft-deleted bem with updated data
-	// 		deletedbem.Name = bem.Name
-			
-	// 		// Restore the bem
-	// 		restoredbem, err := s.repository.RestoreByName(bem.Name)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-			
-	// 		// Update with new data
-	// 		restoredbem.Name = bem.Name
-			
-	// 		return s.repository.Update(restoredbem)
-	// 	}
-		
-	// 	return errors.New("kode gedung sudah digunakan")
-	// }
-
-	// Create bem
-	return s.repository.Create(bem)
-}
-
 // Updatebem updates an existing bem
 func (s *BemService) UpdateBem(bem *models.BEM) error {
 	// Check if bem exists
@@ -122,27 +84,10 @@ func (s *BemService) GetBemWithStats(id uint) (*BemWithStats, error) {
 	}, nil
 }
 
-// GetAllbemsWithStats gets all bems with their statistics
-// func (s *bemService) GetAllbemsWithStats() ([]bemWithStats, error) {
-// 	// Get all bems
-// 	bems, err := s.repository.Get()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Build response with stats
-// 	result := make([]bemWithStats, len(bems))
-// 	for i, bem := range bems {
-		
-// 		result[i] = bemWithStats{
-// 			bem:  bem,
-// 		}
-// 	}
-
-// 	return result, nil
-// } 
-
 func (s *BemService) GetAllLeaders() ([]models.Student, error) {
 	return s.repository.GetAllLeaders()
 }
 
+func (s *BemService) GetBemPeriod(period string) (map[string]interface{}, error) {
+	return s.repository.FindBemByPeriod(period)
+}

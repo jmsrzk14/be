@@ -108,24 +108,6 @@ func (r *MpmRepository) RestoreByName(code string) (*models.MPM, error) {
 	return r.FindByID(deletedMpm.ID)
 }
 
-// // CheckNameExists checks if a code exists, including soft-deleted records
-// func (r *mpmRepository) CheckNameExists(code string, excludeID uint) (bool, error) {
-// 	var count int64
-// 	query := r.db.Unscoped().Model(&models.mpm{}).Where("code = ?", code)
-
-// 	// Exclude the current record if updating
-// 	if excludeID > 0 {
-// 		query = query.Where("id != ?", excludeID)
-// 	}
-
-// 	err := query.Count(&count).Error
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	return count > 0, nil
-// }
-
 func (r *MpmRepository) GetMPMByPeriod(period string) (*models.MPM, error) {
 	var mpm models.MPM
 
@@ -144,4 +126,36 @@ func (r *MpmRepository) GetMPMByPeriod(period string) (*models.MPM, error) {
 	}
 
 	return &mpm, nil
+}
+
+func (r *MpmRepository) FindMpmByPeriod(period string) (map[string]interface{}, error) {
+	var mpm models.MPM
+
+	if err := r.db.Where("period = ?", period).First(&mpm).Error; err != nil {
+		return nil, err
+	}
+
+	// Ambil data mahasiswa berdasarkan ID jabatan
+	var leader, coLeader, secretary models.Student
+
+	// Gunakan ID yang valid (tidak perlu pointer check karena uint default = 0)
+	if mpm.LeaderID != 0 {
+		r.db.First(&leader, mpm.LeaderID)
+	}
+	if mpm.CoLeaderID != 0 {
+		r.db.First(&coLeader, mpm.CoLeaderID)
+	}
+	if mpm.SecretaryID != 0 {
+		r.db.First(&secretary, mpm.Secretary)
+	}
+
+	// Gabungkan hasilnya dalam map
+	result := map[string]interface{}{
+		"period":    mpm.Period,
+		"leader":    leader,
+		"co_leader": coLeader,
+		"secretary": secretary,
+	}
+
+	return result, nil
 }

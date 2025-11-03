@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"bem_be/internal/models"
 	"bem_be/internal/services"
@@ -14,14 +15,16 @@ import (
 )
 
 type AspirationHandler struct {
-	service *services.AspirationService
-	db      *gorm.DB
+	service             *services.AspirationService
+	db                  *gorm.DB
+	notificationService *services.NotificationService
 }
 
-func NewAspirationHandler(db *gorm.DB) *AspirationHandler {
+func NewAspirationHandler(db *gorm.DB, notificationService *services.NotificationService) *AspirationHandler {
 	return &AspirationHandler{
-		service: services.NewAspirationService(db),
-		db:      db,
+		service:             services.NewAspirationService(db),
+		db:                  db,
+		notificationService: notificationService,
 	}
 }
 
@@ -166,11 +169,31 @@ func (h *AspirationHandler) CreateAspiration(c *gin.Context) {
 		return
 	}
 
+	title := "Aspirasi Mahasiswa"
+	message := fmt.Sprintf("Mahasiswa telah mengajukan aspirasi. Cek sekarang!")
+
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
 	// ✅ Response sukses
 	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "Aspirasi berhasil dikirim",
-		"data":    aspiration,
+		"status":       "success",
+		"message":      "Aspirasi berhasil dikirim",
+		"data":         aspiration,
+		"notification": createdNotif,
 	})
 
 }

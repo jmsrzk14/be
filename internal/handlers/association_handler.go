@@ -19,12 +19,14 @@ import (
 // AssociationHandler handles HTTP requests related to associations
 type AssociationHandler struct {
 	service *services.AssociationService
+	notificationService *services.NotificationService
 }
 
 // NewAssociationHandler creates a new association handler
-func NewAssociationHandler(db *gorm.DB) *AssociationHandler {
+func NewAssociationHandler(db *gorm.DB, notificationService *services.NotificationService) *AssociationHandler {
 	return &AssociationHandler{
 		service: services.NewAssociationService(db),
+		notificationService: notificationService,
 	}
 }
 
@@ -164,10 +166,30 @@ func (h *AssociationHandler) CreateAssociation(c *gin.Context) {
 		return
 	}
 
+	title := "Himpunan Baru: " + association.Name
+	message := fmt.Sprintf("Himpunan baru telah dibuat. Cek sekarang!")
+
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "Association created successfully",
 		"data":    association,
+		"notification": createdNotif, 
 	})
 }
 

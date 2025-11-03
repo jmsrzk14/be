@@ -90,6 +90,7 @@ func Initialize() {
 		&models.MPM{},
 		&models.Notification{},
 		&models.UserNotification{},
+		&models.Status_Aspirations{},
 	}
 
 	for _, model := range modelsToMigrate {

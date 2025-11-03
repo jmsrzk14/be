@@ -17,8 +17,6 @@ type Request struct {
 	ReturnPlan     string         `json:"return_plan" gorm:"not null"`
 	RequesterID    string         `json:"requester_id" gorm:"not null"`
 	ApproverID     string         `json:"approver_id" gorm:"default:null"`
-	// Requester      *User          `json:"requester,omitempty" gorm:"foreignKey:RequesterID"`
-	// Approver       *User          `json:"approver,omitempty" gorm:"foreignKey:ApproverID"`
 	ImageURLKTM    string         `json:"image_url_ktm" gorm:"type:varchar(255)"`
 	ImageURLBRG    string         `json:"image_url_barang" gorm:"type:varchar(255)"`
 	Status         string         `json:"status" gorm:"default:'pending';not null"`

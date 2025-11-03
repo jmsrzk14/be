@@ -122,26 +122,10 @@ func (s *MpmService) GetMpmWithStats(id uint) (*MpmWithStats, error) {
 	}, nil
 }
 
-// GetAllmpmsWithStats gets all mpms with their statistics
-// func (s *mpmService) GetAllmpmsWithStats() ([]mpmWithStats, error) {
-// 	// Get all mpms
-// 	mpms, err := s.repository.Get()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Build response with stats
-// 	result := make([]mpmWithStats, len(mpms))
-// 	for i, mpm := range mpms {
-		
-// 		result[i] = mpmWithStats{
-// 			mpm:  mpm,
-// 		}
-// 	}
-
-// 	return result, nil
-// } 
-
 func (s *MpmService) GetMPMByPeriod(period string) (*models.MPM, error) {
 	return s.repository.GetMPMByPeriod(period)
+}
+
+func (s *MpmService) GetMpmPeriod(period string) (map[string]interface{}, error) {
+	return s.repository.FindMpmByPeriod(period)
 }

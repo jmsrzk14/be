@@ -20,11 +20,13 @@ import (
 
 type RequestHandler struct {
 	service *services.RequestService
+	notificationService *services.NotificationService
 }
 
-func NewRequestHandler(db *gorm.DB) *RequestHandler {
+func NewRequestHandler(db *gorm.DB, notificationService *services.NotificationService) *RequestHandler {
 	return &RequestHandler{
 		service: services.NewRequestService(db),
+		notificationService: notificationService,
 	}
 }
 
@@ -169,8 +171,31 @@ func (h *RequestHandler) CreateRequestSarpras(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", "Failed to create request: "+err.Error(), nil))
 		return
 	}
+	title := "Peminjaman Barang Sarpras"
+	message := fmt.Sprintf("%s telah request peminjaman barang. Cek sekarang!", request.Name)
 
-	c.JSON(http.StatusCreated, utils.ResponseHandler("success", "Request created successfully", request))
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":       "success",
+		"message":      "Peminjaman berhasil diajukan",
+		"data":         request,
+		"notification": createdNotif,
+	})
 }
 
 func (h *RequestHandler) UpdateRequestSarpras(c *gin.Context) {

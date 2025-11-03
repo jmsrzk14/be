@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"fmt"
 
 	"bem_be/internal/models"
 	"bem_be/internal/services"
@@ -16,12 +17,14 @@ import (
 type EventHandler struct {
 	service *services.CalenderService
 	db      *gorm.DB
+	notificationService *services.NotificationService
 }
 
-func NewEventHandler(db *gorm.DB) *EventHandler {
+func NewEventHandler(db *gorm.DB, notificationService *services.NotificationService) *EventHandler {
 	return &EventHandler{
 		service: services.NewCalenderService(db),
 		db:      db,
+		notificationService: notificationService,
 	}
 }
 
@@ -93,7 +96,32 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, payload)
+
+	title := "Event Baru dari " + payload.Organization.ShortName
+	message := fmt.Sprintf("%s menambahkan membuat kegiatan %s. Cek sekarang!", payload.Organization.ShortName, payload.Title)
+
+	// Buat instance Notification
+	notification := &models.Notification{
+		Title:   title,
+		Message: message,
+	}
+
+	// Simpan ke database menggunakan service
+	createdNotif, err := h.notificationService.CreateNotification(notification.Title, notification.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Gagal membuat notifikasi berita",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":       "success",
+		"message":      "Event berhasil dibuat",
+		"data":         payload,
+		"notification": createdNotif,
+	})
 }
 
 // PUT /events/:id
