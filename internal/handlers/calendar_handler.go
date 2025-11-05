@@ -97,8 +97,8 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	title := "Event Baru dari " + payload.Organization.ShortName
-	message := fmt.Sprintf("%s menambahkan membuat kegiatan %s. Cek sekarang!", payload.Organization.ShortName, payload.Title)
+	title := "Event Baru"
+	message := fmt.Sprintf("Kegiatan %s telah ditambahkan. Cek sekarang!", payload.Title)
 
 	// Buat instance Notification
 	notification := &models.Notification{
@@ -169,3 +169,14 @@ func (h *EventHandler) DeleteEvent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *EventHandler) GetAllEvents(c *gin.Context) {
+	events, err := h.service.GetAllEvents()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"events": events,
+	})
+}

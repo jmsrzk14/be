@@ -115,6 +115,7 @@ func main() {
 	router.GET("/api/item_sarpras", itemHandler.GetAllItemsSarpras)
 	router.GET("/api/item_depol", itemHandler.GetAllItemsDepol)
 	router.GET("/api/events", eventHandler.GetEventsCurrentMonth)
+	router.GET("/api/event", eventHandler.GetAllEvents)
 	router.GET("/api/status", func(c *gin.Context) {
 		handlers.GetStatusAspirations(c, statusRepo)
 	})

@@ -103,3 +103,11 @@ func (r *CalenderRepository) GetEventsCurrentMonth(start, end time.Time) ([]mode
 	}
 	return events, nil
 }
+
+func (r *CalenderRepository) GetAllEvents() ([]models.Calender, error) {
+	var events []models.Calender
+	if err := r.db.Preload("Organization").Find(&events).Error; err != nil {
+		return nil, err
+	}
+	return events, nil
+}

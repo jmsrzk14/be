@@ -86,3 +86,11 @@ func (s *CalenderService) GetEventsCurrentMonth() ([]models.Calender, int, int, 
 
 	return events, int(month), year, nil
 }
+
+func (s *CalenderService) GetAllEvents() ([]models.Calender, error) {
+	events, err := s.repository.GetAllEvents()
+	if err != nil {
+		return nil, err
+	}
+	return events, nil
+}
