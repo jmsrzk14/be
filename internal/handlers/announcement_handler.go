@@ -1,33 +1,32 @@
 package handlers
 
-import "strings"
 import (
+	"bem_be/internal/models"
+	"bem_be/internal/services"
 	"fmt"
 	"math"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-
-	"bem_be/internal/models"
-	"bem_be/internal/services"
 )
 
 // AnnouncementHandler handles HTTP requests related to announcements
 // di AnnouncementHandler
 type AnnouncementHandler struct {
-	service *services.AnnouncementService
-	db      *gorm.DB
+	service             *services.AnnouncementService
+	db                  *gorm.DB
 	notificationService *services.NotificationService
 }
 
 func NewAnnouncementHandler(db *gorm.DB, notificationService *services.NotificationService) *AnnouncementHandler {
 	return &AnnouncementHandler{
-		service: services.NewAnnouncementService(db),
+		service:             services.NewAnnouncementService(db),
 		notificationService: notificationService,
 	}
 }
@@ -74,7 +73,6 @@ func (h *AnnouncementHandler) GetAllAnnouncement(c *gin.Context) {
 	})
 }
 
-
 // GetAnnouncementByID returns an announcement by ID
 func (h *AnnouncementHandler) GetAnnouncementByID(c *gin.Context) {
 	idStr := c.Param("id")
@@ -114,27 +112,30 @@ func formatPosition(pos string) string {
 func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 	var announcement models.Announcement
 
-	extUserID, exists := c.Get("userID")
-
-	var authorID uint = 0
-	var orgID *uint = nil
-
-	if exists {
-		var student models.Student
-		if err := h.db.Where("user_id = ?", extUserID).First(&student).Error; err == nil {
-			authorID = uint(student.UserID)
-			if student.OrganizationID != nil {
-				orgIDVal := uint(*student.OrganizationID)
-				orgID = &orgIDVal
-			}
-		}
-	}
-
-	// Isi field announcement
 	announcement.Title = c.PostForm("title")
 	announcement.Content = c.PostForm("content")
-	announcement.AuthorID = authorID
-	announcement.OrganizationID = orgID
+	authorIDStr := c.PostForm("authorID")
+	if authorIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "authorID wajib diisi"})
+		return
+	}
+	authorIDUint, err := strconv.ParseUint(authorIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "authorID harus berupa angka"})
+		return
+	}
+	announcement.AuthorID = uint(authorIDUint)
+
+	orgIDStr := c.PostForm("organizationID")
+	if orgIDStr != "" {
+		orgIDUint, err := strconv.ParseUint(orgIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "organizationID harus berupa angka"})
+			return
+		}
+		orgID := uint(orgIDUint)
+		announcement.OrganizationID = &orgID
+	}
 
 	layout := "2006-01-02"
 	if startDateStr := c.PostForm("start_date"); startDateStr != "" {
@@ -196,9 +197,9 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "Announcement created successfully",
-		"data":    announcement,
+		"status":       "success",
+		"message":      "Announcement created successfully",
+		"data":         announcement,
 		"notification": createdNotif,
 	})
 }
