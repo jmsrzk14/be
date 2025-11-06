@@ -55,6 +55,8 @@ func main() {
 	router.Static("/users", "./uploads/user")
 	router.Static("/requests", "./uploads/requests")
 	router.Static("/news", "./Uploads/news")
+	router.Static("/uploads", "./Uploads")          
+	router.Static("/announcement", "./Uploads/announcements")          
 	router.Static("/request", "./Uploads/requests")
 	router.Static("/barang", "./Uploads/request/barang")
 
