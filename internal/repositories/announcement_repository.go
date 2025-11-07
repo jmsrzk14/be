@@ -51,15 +51,15 @@ func (r *AnnouncementRepository) FindByName(code string) (*models.Announcement, 
 	return &announcement, nil
 }
 
-// FindAll finds all announcements
 // GetAllAnnouncements finds all announcements with pagination and optional filters
 func (r *AnnouncementRepository) GetAllAnnouncements(limit, offset int, title, content, category string) ([]models.Announcement, int64, error) {
     var announcements []models.Announcement
     var total int64
 
+    // Awal query
     query := r.db.Model(&models.Announcement{})
 
-    // Tambahkan filter jika ada input pencarian
+    // 🔹 Tambahkan filter pencarian opsional
     if title != "" {
         query = query.Where("title ILIKE ?", "%"+title+"%")
     }
@@ -70,20 +70,24 @@ func (r *AnnouncementRepository) GetAllAnnouncements(limit, offset int, title, c
         query = query.Where("category ILIKE ?", "%"+category+"%")
     }
 
-    // Hitung total data
+    // 🔹 Hitung total data sebelum limit dan offset
     if err := query.Count(&total).Error; err != nil {
         return nil, 0, err
     }
 
-    // Ambil data sesuai limit dan offset
-    if err := query.Limit(limit).Offset(offset).Order("created_at DESC").Find(&announcements).Error; err != nil {
+    // 🔹 Ambil data dengan preload relasi organisasi dan author
+    if err := query.
+        Preload("Organization"). // <<=== ini penting untuk ikutkan data organisasi
+        Preload("Author").       // opsional: ikutkan juga data user pembuat
+        Limit(limit).
+        Offset(offset).
+        Order("created_at DESC").
+        Find(&announcements).Error; err != nil {
         return nil, 0, err
     }
 
     return announcements, total, nil
 }
-
-
 
 // DeleteByID deletes a announcement by ID
 func (r *AnnouncementRepository) DeleteByID(id uint) error {

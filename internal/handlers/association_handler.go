@@ -1,91 +1,92 @@
 package handlers
 
 import (
-	"net/http"
-	"strconv"
-	"math"
-	"os"
-	"time"
-	"path/filepath"
 	"fmt"
+	"math"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"gorm.io/gorm"
 
 	"bem_be/internal/models"
 	"bem_be/internal/services"
 	"bem_be/internal/utils"
+
 	"github.com/gin-gonic/gin"
 )
 
 // AssociationHandler handles HTTP requests related to associations
 type AssociationHandler struct {
-	service *services.AssociationService
+	service             *services.AssociationService
 	notificationService *services.NotificationService
 }
 
 // NewAssociationHandler creates a new association handler
 func NewAssociationHandler(db *gorm.DB, notificationService *services.NotificationService) *AssociationHandler {
 	return &AssociationHandler{
-		service: services.NewAssociationService(db),
+		service:             services.NewAssociationService(db),
 		notificationService: notificationService,
 	}
 }
 
 func (h *AssociationHandler) GetAllAssociations(c *gin.Context) {
-    page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-    perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
-    search := c.Query("name") // pencarian pakai param ?name=
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	search := c.Query("name") // pencarian pakai param ?name=
 
-    if page < 1 {
-        page = 1
-    }
-    if perPage < 1 {
-        perPage = 10
-    }
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 10
+	}
 
-    offset := (page - 1) * perPage
+	offset := (page - 1) * perPage
 
-    associations, total, err := h.service.GetAllAssociations(perPage, offset, search)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
-        return
-    }
+	associations, total, err := h.service.GetAllAssociations(perPage, offset, search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
+		return
+	}
 
-    totalPages := int(math.Ceil(float64(total) / float64(perPage)))
+	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 
-    metadata := utils.PaginationMetadata{
-        CurrentPage: page,
-        PerPage:     perPage,
-        TotalItems:  int(total),
-        TotalPages:  totalPages,
-    }
+	metadata := utils.PaginationMetadata{
+		CurrentPage: page,
+		PerPage:     perPage,
+		TotalItems:  int(total),
+		TotalPages:  totalPages,
+	}
 
-    response := utils.MetadataFormatResponse(
-        "success",
-        "Berhasil list mendapatkan data associations",
-        metadata,
-        associations,
-    )
+	response := utils.MetadataFormatResponse(
+		"success",
+		"Berhasil list mendapatkan data associations",
+		metadata,
+		associations,
+	)
 
-    c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-
 func (h *AssociationHandler) GetAllAssociationsGuest(c *gin.Context) {
-    // ambil semua data tanpa limit & offset
-    associations, err := h.service.GetAllAssociationsGuest()
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
-        return
-    }
+	// ambil semua data tanpa limit & offset
+	associations, err := h.service.GetAllAssociationsGuest()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ResponseHandler("error", err.Error(), nil))
+		return
+	}
 
-    // langsung response tanpa metadata
-    response := utils.ResponseHandler(
-        "success",
-        "Berhasil mendapatkan data",
-        associations,
-    )
+	// langsung response tanpa metadata
+	response := utils.ResponseHandler(
+		"success",
+		"Berhasil mendapatkan data",
+		associations,
+	)
 
-    c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
 // GetAssociationByID returns a association by ID
@@ -119,27 +120,27 @@ func (h *AssociationHandler) GetAssociationByID(c *gin.Context) {
 }
 
 func (h *AssociationHandler) GetAssociationByShortName(c *gin.Context) {
-    shortName := c.Param("shortName")
+	shortName := c.Param("shortName")
 
-    // Optional query param, misal nanti dipakai untuk stats
-    stats := c.Query("stats")
-    _ = stats // sementara tidak digunakan, bisa dihapus jika tidak dipakai
+	// Optional query param, misal nanti dipakai untuk stats
+	stats := c.Query("stats")
+	_ = stats // sementara tidak digunakan, bisa dihapus jika tidak dipakai
 
-    result, err := h.service.GetAssociationByShortName(shortName)
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{
-            "status": "error",
-            "message": "Association not found",
-            "error":  err.Error(),
-        })
-        return
-    }
+	result, err := h.service.GetAssociationByShortName(shortName)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "Association not found",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "status":  "success",
-        "message": "Association retrieved successfully",
-        "data":    result,
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Association retrieved successfully",
+		"data":    result,
+	})
 }
 
 // CreateAssociation creates a new association
@@ -151,7 +152,6 @@ func (h *AssociationHandler) CreateAssociation(c *gin.Context) {
 	association.ShortName = c.PostForm("short_name")
 
 	association.CategoryID = 3
-
 
 	// ambil file
 	file, err := c.FormFile("image")
@@ -186,10 +186,10 @@ func (h *AssociationHandler) CreateAssociation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Association created successfully",
-		"data":    association,
-		"notification": createdNotif, 
+		"status":       "success",
+		"message":      "Association created successfully",
+		"data":         association,
+		"notification": createdNotif,
 	})
 }
 
@@ -203,13 +203,12 @@ func (h *AssociationHandler) UpdateAssociation(c *gin.Context) {
 	}
 
 	type UpdateInput struct {
-		Name      string `form:"name" binding:"omitempty"`
-		ShortName string `form:"short_name" binding:"omitempty"`
+		Name      string `form:"name" binding:"omitempty" json:"name"`
+		ShortName string `form:"short_name" binding:"omitempty" json:"short_name"`
 	}
 	var input UpdateInput
 	if err := c.ShouldBind(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
-		return
+		_ = c.ShouldBind(&input)
 	}
 
 	var association models.Organization
@@ -274,7 +273,7 @@ func (h *AssociationHandler) DeleteAssociation(c *gin.Context) {
 		"status":  "success",
 		"message": "Association deleted successfully",
 	})
-} 
+}
 
 func (h *AssociationHandler) GetAdminAssociations(c *gin.Context) {
 	shortName := c.Param("shortName")
