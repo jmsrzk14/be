@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"bem_be/internal/auth"
 	"bem_be/internal/database"
@@ -55,8 +56,8 @@ func main() {
 	router.Static("/users", "./uploads/user")
 	router.Static("/requests", "./uploads/requests")
 	router.Static("/news", "./Uploads/news")
-	router.Static("/uploads", "./Uploads")          
-	router.Static("/announcement", "./Uploads/announcements")          
+	router.Static("/uploads", "./Uploads")
+	router.Static("/announcement", "./Uploads/announcements")
 	router.Static("/request", "./Uploads/requests")
 	router.Static("/barang", "./Uploads/request/barang")
 
@@ -286,10 +287,25 @@ func main() {
 	// Add public endpoints
 	router.GET("/api/students/by-user-id/:user_id", studentHandler.GetStudentByUserID)
 
-	// // Log all registered routes
-	// for _, ri := range router.Routes() {
-	// 	log.Printf("Route: %s %s", ri.Method, ri.Path)
-	// }
+	go func() {
+		for {
+			now := time.Now()
+
+			target := time.Date(now.Year(), now.Month(), now.Day(), 17, 46, 0, 0, now.Location())
+
+			if now.After(target) {
+				target = target.Add(24 * time.Hour)
+			}
+
+			duration := target.Sub(now)
+			log.Printf("Menunggu %v sampai pukul %v untuk menjalankan backup...", duration, target.Format("15:04"))
+
+			time.Sleep(duration)
+
+			log.Println("Waktu tercapai! Menjalankan backup database...")
+			database.BackupDatabase()
+		}
+	}()
 
 	log.Printf("Server berjalan di port %s", port)
 	err = router.Run(":" + port)
@@ -297,4 +313,5 @@ func main() {
 		log.Fatalf("Gagal memulai server: %v", err)
 		os.Exit(1)
 	}
+
 }
