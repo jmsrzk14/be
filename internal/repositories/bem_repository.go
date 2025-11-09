@@ -119,9 +119,9 @@ func (r *BemRepository) GetAllLeaders() ([]models.Student, error) {
 			AND students.position <> ''
 			AND (
 				students.position LIKE '%_bem%' OR
-				students.position LIKE '%_mpm%'
+				students.position LIKE '%_mpm%' OR
+				students.position = 'ketua_department'
 			)
-			AND students.position NOT LIKE '%_department%'
 			AND students.position NOT LIKE '%_himpunan%'
 			AND students.position NOT LIKE '%_ukm%'
 			AND students.deleted_at IS NULL

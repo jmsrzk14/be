@@ -31,10 +31,16 @@ func (r *AnnouncementRepository) Update(announcement *models.Announcement) error
 // FindByID finds a announcement by ID
 func (r *AnnouncementRepository) FindByID(id uint) (*models.Announcement, error) {
 	var announcement models.Announcement
-	err := r.db.First(&announcement, id).Error
+
+	err := r.db.
+		Preload("Organization"). 
+		Preload("Author"). 
+		First(&announcement, id).Error
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &announcement, nil
 }
 
@@ -70,15 +76,13 @@ func (r *AnnouncementRepository) GetAllAnnouncements(limit, offset int, title, c
         query = query.Where("category ILIKE ?", "%"+category+"%")
     }
 
-    // 🔹 Hitung total data sebelum limit dan offset
     if err := query.Count(&total).Error; err != nil {
         return nil, 0, err
     }
 
-    // 🔹 Ambil data dengan preload relasi organisasi dan author
     if err := query.
-        Preload("Organization"). // <<=== ini penting untuk ikutkan data organisasi
-        Preload("Author").       // opsional: ikutkan juga data user pembuat
+        Preload("Organization"). 
+        Preload("Author"). 
         Limit(limit).
         Offset(offset).
         Order("created_at DESC").

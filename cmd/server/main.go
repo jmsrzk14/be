@@ -113,6 +113,7 @@ func main() {
 	router.GET("/api/visimisibem/:period", visimisiHandler.GetVisiMisiByPeriod)
 	router.GET("/api/news", newsHandler.GetAllNews)
 	router.GET("/api/announcements", announcementHandler.GetAllAnnouncement)
+	router.GET("/api/announcements/:id", announcementHandler.GetAnnouncementByID)
 	router.GET("/api/news/:id", newsHandler.GetNewsByID)
 	router.GET("/api/item_sarpras", itemHandler.GetAllItemsSarpras)
 	router.GET("/api/item_depol", itemHandler.GetAllItemsDepol)
