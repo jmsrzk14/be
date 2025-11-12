@@ -25,7 +25,10 @@ func (r *AnnouncementRepository) Create(announcement *models.Announcement) error
 
 // Update updates an existing announcement
 func (r *AnnouncementRepository) Update(announcement *models.Announcement) error {
-	return r.db.Save(announcement).Error
+	return r.db.Model(&models.Announcement{}).
+		Where("id = ?", announcement.ID).
+		Omit("OrganizationID", "AuthorID").
+		Updates(announcement).Error
 }
 
 // FindByID finds a announcement by ID

@@ -218,6 +218,25 @@ func (h *AnnouncementHandler) UpdateAnnouncement(c *gin.Context) {
 	announcement.Title = c.PostForm("title")
 	announcement.Content = c.PostForm("content")
 
+	layout := "2006-01-02"
+	if startDateStr := c.PostForm("start_date"); startDateStr != "" {
+		startDate, err := time.Parse(layout, startDateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format, use YYYY-MM-DD"})
+			return
+		}
+		announcement.StartDate = &startDate
+	}
+
+	if endDateStr := c.PostForm("end_date"); endDateStr != "" {
+		endDate, err := time.Parse(layout, endDateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_date format, use YYYY-MM-DD"})
+			return
+		}
+		announcement.EndDate = &endDate
+	}
+
 	file, err := c.FormFile("file")
 	if err == nil {
 		uploadPath := "uploads/announcements"

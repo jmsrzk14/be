@@ -164,7 +164,7 @@ func CreateAdminUser() error {
 	// Create admin user
 	adminUser := models.User{
 		Username: "admin",
-		Password: "itdelbem", // Will be hashed by BeforeSave hook
+		Password: "ITDelBEM2425*", // Will be hashed by BeforeSave hook
 		Role:     "Admin",
 	}
 

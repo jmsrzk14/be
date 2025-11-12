@@ -290,19 +290,15 @@ func main() {
 	go func() {
 		for {
 			now := time.Now()
-
-			target := time.Date(now.Year(), now.Month(), now.Day(), 17, 46, 0, 0, now.Location())
-
+			target := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
 			if now.After(target) {
-				target = target.Add(24 * time.Hour)
+				target = target.AddDate(1, 0, 0) // tambah 1 tahun
 			}
-
 			duration := target.Sub(now)
-			log.Printf("Menunggu %v sampai pukul %v untuk menjalankan backup...", duration, target.Format("15:04"))
-
+			log.Printf("Menunggu %v sampai backup tahunan pukul %v...", duration, target.Format("2006-01-02 15:04"))
 			time.Sleep(duration)
 
-			log.Println("Waktu tercapai! Menjalankan backup database...")
+			log.Println("Waktu backup tahunan tercapai! Menjalankan backup database...")
 			database.BackupDatabase()
 		}
 	}()
