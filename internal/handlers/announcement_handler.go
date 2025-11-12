@@ -158,7 +158,7 @@ func (h *AnnouncementHandler) CreateAnnouncement(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err == nil {
-		uploadPath := "uploads"
+		uploadPath := "uploads/announcements"
 		os.MkdirAll(uploadPath, os.ModePerm)
 
 		fileName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
